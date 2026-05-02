@@ -1,0 +1,2 @@
+# Prefer the PHP homepage over any leftover static index.html
+DirectoryIndex index.php index.html

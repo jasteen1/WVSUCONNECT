@@ -1,12 +1,15 @@
 <?php
+
+declare(strict_types=1);
+
 // process-register.php
-require_once 'db_conn.php';
+require_once __DIR__ . '/db_conn.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = $_POST['full_name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm_password'] ?? '';
+    $full_name = isset($_POST['full_name']) ? trim((string) $_POST['full_name']) : '';
+    $email = isset($_POST['email']) ? strtolower(trim((string) $_POST['email'])) : '';
+    $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
+    $confirm = isset($_POST['confirm_password']) ? (string) $_POST['confirm_password'] : '';
 
     // Simple validation: passwords match
     if ($password !== $confirm) {
@@ -14,9 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 1. Check if email exists (Reads from Slave)
-    $check_sql = "SELECT user_id FROM users WHERE email = ? LIMIT 1";
-    $existing = fetch($check_sql, [$email]);
+    // Same DB as INSERT — avoids false “available” email when slave lags or is another instance.
+    $check_sql = 'SELECT user_id FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1';
+    $existing = fetch_master($check_sql, [$email]);
     
     if ($existing) {
         die("Email is already registered. <a href='login.php'>Login here</a>");

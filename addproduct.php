@@ -6,18 +6,15 @@ require_once 'db_conn.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Product - WVSU Marketplace</title>
-    <!-- Latest compiled and minified CSS -->
+    <meta name="theme-color" content="#0d4daa">
+    <title>List a product — WVSU CONNECT</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Latest compiled JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
+    <?php include __DIR__ . '/head_assets.php'; ?>
 </head>
 <body>
     <?php include 'navbar.php'; ?>
 
-<div class="container mt-5 mb-5">
+<div class="container mt-5 mb-5 pb-5 wvsu-pan-soft" data-io-animate>
     <div class="d-flex align-items-center mb-4">
         <a href="products.php" class="btn btn-outline-secondary rounded-circle me-3">
             <i class="bi bi-arrow-left"></i>
@@ -129,49 +126,7 @@ require_once 'db_conn.php';
 </style>
 
 
-<footer class="bg-white border-top pt-5 pb-4 mt-5">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h5 class="fw-bold text-primary">WVSU <span class="text-dark">Marketplace</span></h5>
-                <p class="text-muted small mt-2">
-                    A dedicated platform for Taga-West to trade, share, and grow together within the campus community.
-                </p>
-            </div>
-
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h6 class="fw-bold mb-3">Quick Links</h6>
-                <ul class="list-unstyled small">
-                    <li class="mb-2"><a href="index.html" class="text-decoration-none text-muted">Home</a></li>
-                    <li class="mb-2"><a href="products.php" class="text-decoration-none text-muted">Browse Products</a></li>
-                    <li class="mb-2"><a href="services.php" class="text-decoration-none text-muted">Explore Services</a></li>
-                </ul>
-            </div>
-
-            <div class="col-md-4 text-md-end">
-                <h6 class="fw-bold mb-3">Project Team</h6>
-                <p class="text-muted small mb-0">Developed with ❤️ by</p>
-                <p class="fw-bold text-dark">Group 5 - WVSU Students</p>
-                <div class="mt-3">
-                    <i class="bi bi-facebook me-2 text-muted"></i>
-                    <i class="bi bi-github me-2 text-muted"></i>
-                    <i class="bi bi-envelope text-muted"></i>
-                </div>
-            </div>
-        </div>
-
-        <hr class="my-4 text-muted opacity-25">
-
-        <div class="row align-items-center">
-            <div class="col-md-6 small text-muted">
-                &copy; 2026 WVSU Marketplace. For Academic Purposes Only.
-            </div>
-            <div class="col-md-6 text-md-end small">
-                <a href="#" class="text-decoration-none text-muted me-3">Privacy Policy</a>
-                <a href="#" class="text-decoration-none text-muted">Terms of Use</a>
-            </div>
-        </div>
-    </div>
-</footer>
+<?php include __DIR__ . '/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

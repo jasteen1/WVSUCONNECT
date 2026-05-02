@@ -1,5 +1,6 @@
 <?php
 require_once 'db_conn.php';
+require_once __DIR__ . '/service_pricing.inc.php';
 if (empty($_SESSION['user_id'])) { header('Location: login.php'); exit; }
 $uid = intval($_SESSION['user_id']);
 $listing_id = intval($_POST['listing_id'] ?? 0);
@@ -54,7 +55,7 @@ if ($stmt) {
 }
 
 if ($owner['listing_type'] === 'product') {
-    $price = floatval($_POST['price'] ?? 0);
+    $price = wvsu_parse_money_string((string) ($_POST['price'] ?? ''));
     $stock = intval($_POST['stock'] ?? 0);
     $s = $master_conn->prepare("UPDATE products SET price = ?, stock = ? WHERE listing_id = ?");
     $s->bind_param('dii', $price, $stock, $listing_id);
@@ -65,11 +66,107 @@ if ($owner['listing_type'] === 'product') {
     $u->bind_param('si', $new_status, $listing_id);
     $u->execute();
 } else {
-    $rate = floatval($_POST['rate'] ?? 0);
+    $rate = wvsu_parse_money_string((string) ($_POST['rate'] ?? ''));
     $rate_type = $_POST['rate_type'] ?? 'fixed';
     $s = $master_conn->prepare("UPDATE services SET rate = ?, rate_type = ? WHERE listing_id = ?");
     $s->bind_param('dsi', $rate, $rate_type, $listing_id);
     $s->execute();
+}
+
+if ($owner['listing_type'] === 'service') {
+    require_once __DIR__ . '/service_portfolio.inc.php';
+    wvsu_service_pricing_ensure_table($master_conn);
+    wvsu_service_portfolio_ensure_table($master_conn);
+
+    if (!empty($_POST['portfolio_delete']) && is_array($_POST['portfolio_delete'])) {
+        foreach ($_POST['portfolio_delete'] as $delRaw) {
+            $pid = intval($delRaw);
+            if ($pid <= 0) {
+                continue;
+            }
+            $res = $master_conn->query(
+                'SELECT file_path FROM service_portfolio_items WHERE portfolio_id=' . intval($pid)
+                    . ' AND listing_id=' . intval($listing_id) . ' LIMIT 1'
+            );
+            $prow = $res ? $res->fetch_assoc() : null;
+            if ($prow && !empty($prow['file_path'])) {
+                $abs = __DIR__ . '/' . $prow['file_path'];
+                if (is_file($abs)) {
+                    @unlink($abs);
+                }
+            }
+            $master_conn->query(
+                'DELETE FROM service_portfolio_items WHERE portfolio_id=' . intval($pid)
+                    . ' AND listing_id=' . intval($listing_id)
+            );
+        }
+    }
+
+    $order = json_decode($_POST['portfolio_existing_order'] ?? '[]', true);
+    $spansMap = json_decode($_POST['portfolio_spans_existing'] ?? '{}', true);
+    if (is_array($order)) {
+        $uSt = $master_conn->prepare(
+            'UPDATE service_portfolio_items SET sort_order = ?, grid_span = ? WHERE portfolio_id = ? AND listing_id = ?'
+        );
+        foreach ($order as $pos => $pidRaw) {
+            $pid = intval($pidRaw);
+            if ($pid <= 0) {
+                continue;
+            }
+            $sp = 1;
+            if (isset($spansMap[$pid])) {
+                $sp = max(1, min(2, (int) $spansMap[$pid]));
+            } elseif (isset($spansMap[(string) $pid])) {
+                $sp = max(1, min(2, (int) $spansMap[(string) $pid]));
+            }
+            if ($uSt) {
+                $uSt->bind_param('iiii', $pos, $sp, $pid, $listing_id);
+                $uSt->execute();
+            }
+        }
+        if ($uSt) {
+            $uSt->close();
+        }
+    }
+
+    $newFiles = $_FILES['portfolio_new_files'] ?? null;
+    $newSpanArr = json_decode($_POST['portfolio_spans_new'] ?? '[]', true);
+    if (!is_array($newSpanArr)) {
+        $newSpanArr = [];
+    }
+    $newSpanArr = array_values(array_map(function ($v) {
+        return max(1, min(2, (int) $v));
+    }, $newSpanArr));
+
+    $maxRow = fetch('SELECT COALESCE(MAX(sort_order), -1) AS m FROM service_portfolio_items WHERE listing_id = ?', [$listing_id]);
+    $nextSort = intval($maxRow['m'] ?? -1) + 1;
+
+    if (
+        is_array($newFiles)
+        && !empty($newFiles['name'])
+        && is_array($newFiles['name'])
+    ) {
+        wvsu_save_portfolio_uploads($master_conn, $listing_id, $newFiles, $newSpanArr, $nextSort);
+    }
+
+    $priceItems = wvsu_collect_price_items(
+        isset($_POST['price_item_label']) && is_array($_POST['price_item_label']) ? $_POST['price_item_label'] : [],
+        isset($_POST['price_item_amount']) && is_array($_POST['price_item_amount']) ? $_POST['price_item_amount'] : []
+    );
+    wvsu_save_price_items($master_conn, $listing_id, $priceItems);
+
+    $minP = wvsu_min_price_from_items($priceItems);
+    if (($rate_type === 'negotiable') && $rate <= 0 && $minP === null) {
+        $rate = 0;
+    } elseif ($rate <= 0 && $minP !== null) {
+        $rate = $minP;
+    }
+    $s2 = $master_conn->prepare("UPDATE services SET rate = ?, rate_type = ? WHERE listing_id = ?");
+    if ($s2) {
+        $s2->bind_param('dsi', $rate, $rate_type, $listing_id);
+        $s2->execute();
+        $s2->close();
+    }
 }
 
 header('Location: your_listings.php');

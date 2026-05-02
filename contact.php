@@ -10,11 +10,19 @@ $listing_id = intval($_GET['listing_id'] ?? 0);
 if ($listing_id <= 0) die('Invalid listing.');
 
 // Get listing owner
-$sql = "SELECT owner_id FROM listings WHERE listing_id = ? LIMIT 1";
+$sql = 'SELECT owner_id, title, listing_type, image_url FROM listings WHERE listing_id = ? LIMIT 1';
 $listing = fetch($sql, [$listing_id]);
-if (!$listing) die('Listing not found.');
+if (! $listing) {
+    exit('Listing not found.');
+}
 
-$owner_id = intval($listing['owner_id']);
+$owner_id = (int) $listing['owner_id'];
+$listing_title = trim((string) ($listing['title'] ?? ''));
+$list_type_raw = strtolower((string) ($listing['listing_type'] ?? 'product'));
+$type_label = $list_type_raw === 'service' ? 'service' : 'product';
+if ($listing_title === '') {
+    $listing_title = $type_label === 'service' ? 'Service listing' : 'Product listing';
+}
 $me = intval($_SESSION['user_id']);
 
 if ($owner_id === $me) {
@@ -73,11 +81,15 @@ $master_conn->query($create);
 
 // Insert mapping for this conversation and listing
 // Allow multiple mapping rows for same conversation if needed
- $map_id = insert("INSERT INTO conversation_listings (conversation_id, listing_id) VALUES (?, ?)", [$conv_id, $listing_id]);
+$map_id = insert('INSERT INTO conversation_listings (conversation_id, listing_id) VALUES (?, ?)', [$conv_id, $listing_id]);
 @file_put_contents(__DIR__ . '/contact_debug.log', "inserted_map_id={$map_id},conv_id={$conv_id},listing={$listing_id}\n", FILE_APPEND);
-// Insert an initial message and set last_message_at so the conversation shows up immediately
-$init_msg = "Conversation started for listing {$listing_id}.";
-insert("INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)", [$conv_id, $me, $init_msg]);
+// Starter line so both people see intent; banner in messages.php shows photo + link
+$init_msg = 'This chat is about '
+    . ($type_label === 'service' ? 'the service' : 'the product')
+    . ' “'
+    . $listing_title
+    . '” — open “View listing” above the thread for photo & details.';
+insert('INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)', [$conv_id, $me, $init_msg]);
 insert("UPDATE conversations SET last_message_at = current_timestamp() WHERE conversation_id = ?", [$conv_id]);
 // If conv_id wasn't set for some reason, try to find any existing conversation between the participants
 if (empty($conv_id) || intval($conv_id) <= 0) {

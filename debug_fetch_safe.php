@@ -1,6 +1,17 @@
 <?php
 // Safe debug script that does NOT include db_conn.php (to avoid side effects)
-$mysqli = new mysqli('localhost', 'root', '', 'wvsudb', 3306);
+$cfg = [];
+if (is_file(__DIR__ . '/db_config.local.php')) {
+    $inc = include __DIR__ . '/db_config.local.php';
+    $cfg = is_array($inc) ? $inc : [];
+}
+$host = $cfg['host'] ?? getenv('WVSU_DB_HOST') ?: '127.0.0.1';
+$user = $cfg['user'] ?? getenv('WVSU_DB_USER') ?: 'root';
+$pass = $cfg['password'] ?? getenv('WVSU_DB_PASSWORD') ?: '';
+$db = $cfg['database'] ?? getenv('WVSU_DB_NAME') ?: 'wvsudb';
+$port = (int) ($cfg['master_port'] ?? getenv('WVSU_DB_MASTER_PORT') ?: 3306);
+mysqli_report(MYSQLI_REPORT_OFF);
+$mysqli = new mysqli($host, $user, $pass, $db, $port);
 if ($mysqli->connect_error) {
     echo json_encode(['error' => 'connect', 'msg' => $mysqli->connect_error]);
     exit;

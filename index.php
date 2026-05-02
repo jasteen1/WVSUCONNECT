@@ -1,355 +1,325 @@
 <?php
-require_once 'db_conn.php';
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WVSU Marketplace</title>
-    <!-- Latest compiled and minified CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Latest compiled JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-</head>
-<body>
 
-<?php include 'navbar.php'; ?>
+declare(strict_types=1);
 
-<div class="position-relative overflow-hidden bg-dark text-white" style="
-    /* Placeholder - High quality campus/student life image */
-    background: linear-gradient(to right, rgba(31, 30, 30, 0.8) 30%, rgba(0,0,0,0.2) 100%), 
-                url('wvsucover.png');
-    background-size: cover;
-    background-position: center;
-    min-height: 600px;
-    display: flex;
-    align-items: center;
-">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-6 col-md-8 text-start">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-2">
-                        <li class="breadcrumb-item"><a href="#" class="text-warning text-decoration-none fw-bold">WVSU Exclusive</a></li>
-                    </ol>
-                </nav>
-                
-                <h1 class="display-3 fw-bold mb-3 shadow-sm">
-                    Agi si james <br><span class="text-warning">Very cool motto</span>
-                </h1>
-                
-                <p class="lead mb-4 opacity-75">
-                   Agi si james Agi si james
-                   Agi si james Agi si james
-                   Agi si james Agi si james
-                   Agi si james Agi si james
-                   Agi si james Agi si james    
-                </p>
-                
-                <div class="mt-5 d-flex align-items-center gap-4 opacity-50">
-                    <small><i class="bi bi-shield-check me-1"></i> Verified Students</small>
-                    <small><i class="bi bi-geo-alt me-1"></i> Campus Meetups</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+require_once __DIR__ . '/db_conn.php';
+require_once __DIR__ . '/messaging_schema.inc.php';
 
-<section class="py-5 bg-light border-top border-bottom">
-    <div class="container py-4">
-        <div class="text-center mb-5">
-            <h6 class="text-primary fw-bold text-uppercase tracking-wider">Our Process</h6>
-            <h2 class="display-5 fw-bold">Simple. Secure. <span class="text-primary">Taga-West.</span></h2>
-            <p class="text-muted mx-auto" style="max-width: 600px;">
-                Trading within the WVSU community has never been easier. Follow these three steps to get started.
-            </p>
-        </div>
-
-        <div class="row g-5">
-            <div class="col-lg-4">
-                <div class="text-center text-lg-start">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle mb-4 shadow" style="width: 60px; height: 60px;">
-                        <i class="bi bi-megaphone fs-3"></i>
-                    </div>
-                    <h4 class="fw-bold">1. Post Your Need</h4>
-                    <p class="text-muted">
-                        Snap a photo of your pre-loved lab gown, or list your tutoring services. Provide a clear description and set your student-friendly price.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="text-center text-lg-start">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-warning text-dark rounded-circle mb-4 shadow" style="width: 60px; height: 60px;">
-                        <i class="bi bi-chat-dots fs-3"></i>
-                    </div>
-                    <h4 class="fw-bold">2. Connect via Chat</h4>
-                    <p class="text-muted">
-                        No need to share your personal phone number or social media. Use our integrated messaging to discuss details and agree on a price.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="text-center text-lg-start">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle mb-4 shadow" style="width: 60px; height: 60px;">
-                        <i class="bi bi-hand-thumbs-up fs-3"></i>
-                    </div>
-                    <h4 class="fw-bold">3. Meet & Exchange</h4>
-                    <p class="text-muted">
-                        Meet up at the **Quezon Hall marker** or the **CAF court**. Inspect the item or receive the service, then settle the payment safely on the spot.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-5 p-4 rounded-4 bg-white shadow-sm border-start border-warning border-5 d-flex align-items-center">
-            <i class="bi bi-shield-lock-fill text-warning fs-1 me-4"></i>
-            <div>
-                <h6 class="fw-bold mb-1">Stay Safe, Taga-West!</h6>
-                <p class="small text-muted mb-0">Always meet in well-lit, public areas of the campus. Verify the student's ID if necessary before finalizing the transaction.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<div class="container mt-5 position-relative z-index-2">
-    <div class="row g-4">
-         <div>
-            <h2 class="fw-bold mb-0">Get Started</h2>
-            <p class="text-muted mb-0">Here are some of the things you can do</p>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden h-100 hover-lift">
-                <div class="card-body p-4 position-relative">
-                    <div class="text-start pe-5">
-                        <h6 class="text-primary fw-bold text-uppercase mb-1" style="font-size: 0.8rem;">Marketplace</h6>
-                        <h4 class="fw-bold mb-2">Buy Products</h4>
-                        <p class="text-muted small">Score pre-loved gears and campus essentials.</p>
-                        <a href="products.php" class="btn btn-link p-0 text-decoration-none fw-bold stretched-link">Browse Items <i class="bi bi-arrow-right"></i></a>
-                    </div>
-                    <i class="bi bi-bag-check-fill position-absolute end-0 bottom-0 mb-n2 me-n2 opacity-10" style="font-size: 5rem;"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden h-100 hover-lift">
-                <div class="card-body p-4 position-relative border-bottom border-primary border-4">
-                    <div class="text-start pe-5">
-                        <h6 class="text-success fw-bold text-uppercase mb-1" style="font-size: 0.8rem;">Earn Cash</h6>
-                        <h4 class="fw-bold mb-2">Sell Products</h4>
-                        <p class="text-muted small">Declutter your room and earn extra allowance.</p>
-                        <a href="addproduct.php" class="btn btn-link p-0 text-decoration-none fw-bold text-success stretched-link">List an Item <i class="bi bi-arrow-right"></i></a>
-                    </div>
-                    <i class="bi bi-tags-fill position-absolute end-0 bottom-0 mb-n2 me-n2 opacity-10" style="font-size: 5rem;"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden h-100 hover-lift">
-                <div class="card-body p-4 position-relative">
-                    <div class="text-start pe-5">
-                        <h6 class="text-info fw-bold text-uppercase mb-1" style="font-size: 0.8rem;">Get Help</h6>
-                        <h4 class="fw-bold mb-2">Avail Services</h4>
-                        <p class="text-muted small">Find tutors, artists, and student pros.</p>
-                        <a href="services.php" class="btn btn-link p-0 text-decoration-none fw-bold text-info stretched-link">Find Support <i class="bi bi-arrow-right"></i></a>
-                    </div>
-                    <i class="bi bi-person-workspace position-absolute end-0 bottom-0 mb-n2 me-n2 opacity-10" style="font-size: 5rem;"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden h-100 hover-lift">
-                <div class="card-body p-4 position-relative border-bottom border-info border-4">
-                    <div class="text-start pe-5">
-                        <h6 class="text-dark fw-bold text-uppercase mb-1" style="font-size: 0.8rem;">Be a Pro</h6>
-                        <h4 class="fw-bold mb-2">Offer Services</h4>
-                        <p class="text-muted small">Market your skills to the entire campus.</p>
-                        <a href="addservice.php" class="btn btn-link p-0 text-decoration-none fw-bold text-dark stretched-link">Start Hosting <i class="bi bi-arrow-right"></i></a>
-                    </div>
-                    <i class="bi bi-rocket-takeoff-fill position-absolute end-0 bottom-0 mb-n2 me-n2 opacity-10" style="font-size: 5rem;"></i>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="container my-5">
-    <div class="d-flex justify-content-between align-items-end mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Recently Listed</h2>
-            <p class="text-muted mb-0">Check out the latest finds from fellow Taga-West.</p>
-        </div>
-        <a href="products.php" class="btn btn-outline-primary rounded-pill">View All</a>
-    </div>
-
-    <?php
-    // Fetch recent active listings (products & services)
-    $recent = fetchAll(
-        "SELECT l.*, c.name AS category_name, u.full_name AS owner_name, p.price, p.stock, s.rate, s.rate_type
-         FROM listings l
-         LEFT JOIN categories c ON l.category_id = c.category_id
-         LEFT JOIN users u ON l.owner_id = u.user_id
-         LEFT JOIN products p ON p.listing_id = l.listing_id
-         LEFT JOIN services s ON s.listing_id = l.listing_id
-        WHERE l.status = 'active'
-         ORDER BY l.created_at DESC
-         LIMIT 4"
-    );
+/**
+ * One card on the homepage “Recently listed” grid.
+ *
+ * @param array<string, mixed> $item
+ */
+function wvsu_index_render_recent_card(array $item): void
+{
+    $listingId = (int) ($item['listing_id'] ?? 0);
+    $isService = (($item['listing_type'] ?? '') === 'service');
+    $img = ! empty($item['image_url'])
+        ? (string) $item['image_url']
+        : 'https://via.placeholder.com/600x400?text=No+Image';
+    $badgeClass = $isService ? 'bg-info text-white' : 'bg-white text-dark';
+    $isSoldOut = ((($item['listing_type'] ?? '') === 'product') && (int) ($item['stock'] ?? 0) <= 0);
+    $href = $isService
+        ? 'view-service.php?id=' . $listingId
+        : 'view-product.php?id=' . $listingId;
     ?>
-
-    <div class="row g-4">
-        <?php if (empty($recent)): ?>
-            <div class="col-12">
-                <div class="alert alert-info">No recent listings found.</div>
-            </div>
-        <?php else: ?>
-            <?php foreach ($recent as $item):
-                $img = $item['image_url'] ? $item['image_url'] : 'https://via.placeholder.com/600x400?text=No+Image';
-                $badgeClass = $item['listing_type'] === 'service' ? 'bg-info text-white' : 'bg-white text-dark';
-                $isSoldOut = ($item['listing_type'] === 'product' && intval($item['stock'] ?? 0) <= 0);
-            ?>
             <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm item-card <?= $isSoldOut ? 'sold-out' : '' ?>">
+                <div class="card h-100 border-0 shadow-sm item-card market-card <?= $isSoldOut ? 'sold-out' : '' ?>">
                     <div class="position-absolute top-0 start-0 m-2">
-                        <span class="badge <?= $badgeClass ?> shadow-sm"><?= htmlspecialchars($item['category_name'] ?? ucfirst($item['listing_type'])) ?></span>
+                        <span class="badge <?= $badgeClass ?> shadow-sm"><?= htmlspecialchars((string) ($item['category_name'] ?? (($isService ? 'Service' : 'Product')))) ?></span>
                     </div>
                     <?php if ($isSoldOut): ?>
                         <div class="position-absolute top-0 end-0 m-2">
                             <span class="badge bg-danger text-white shadow-sm">Sold out</span>
                         </div>
                     <?php endif; ?>
-                    <img src="<?= htmlspecialchars($img) ?>" class="card-img-top" alt="<?= htmlspecialchars($item['title']) ?>" style="height: 200px; object-fit: cover;">
+                    <img src="<?= htmlspecialchars($img) ?>" class="card-img-top" alt="<?= htmlspecialchars((string) ($item['title'] ?? '')) ?>" style="height: 200px; object-fit: cover;">
                     <div class="card-body p-3">
-                        <h6 class="card-title mb-1 text-truncate fw-bold"><?= htmlspecialchars($item['title']) ?></h6>
+                        <h6 class="card-title mb-1 text-truncate fw-bold"><?= htmlspecialchars((string) ($item['title'] ?? '')) ?></h6>
                         <div class="d-flex align-items-center mb-2">
-                            <?php if ($item['listing_type'] === 'product'): ?>
-                                <span class="text-primary fw-bolder">₱<?= number_format($item['price'] ?? 0, 2) ?></span>
-                                <span class="ms-2 badge bg-light text-muted fw-normal" style="font-size: 0.7rem;">Stock <?= intval($item['stock'] ?? 0) ?></span>
+                            <?php if (! $isService): ?>
+                                <span class="text-primary fw-bolder">₱<?= number_format((float) ($item['price'] ?? 0), 2) ?></span>
+                                <span class="ms-2 badge bg-light text-muted fw-normal" style="font-size: 0.7rem;">Stock <?= (int) ($item['stock'] ?? 0) ?></span>
                                 <?php if ($isSoldOut): ?>
                                     <span class="ms-2 badge bg-danger text-white" style="font-size: 0.7rem;">Sold out</span>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <span class="text-primary fw-bolder">₱<?= number_format($item['rate'] ?? 0, 2) ?><?php if (!empty($item['rate_type']) && $item['rate_type'] === 'per_hour') echo '/hr'; ?></span>
+                                <span class="text-primary fw-bolder">₱<?= number_format((float) ($item['rate'] ?? 0), 2) ?><?php if (! empty($item['rate_type']) && $item['rate_type'] === 'per_hour') {
+                                    echo '/hr';
+                                } ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="d-flex align-items-center pt-2 border-top">
                             <div class="bg-secondary rounded-circle me-2" style="width: 20px; height: 20px;"></div>
-                            <small class="text-muted">By <?= htmlspecialchars($item['owner_name'] ?? 'User') ?></small>
+                            <small class="text-muted">By <?= htmlspecialchars((string) ($item['owner_name'] ?? 'User')) ?></small>
                         </div>
-                        <?php if (!$isSoldOut): ?>
-                            <a href="view-product.php?id=<?= intval($item['listing_id']) ?>" class="stretched-link"></a>
+                        <?php if (! $isSoldOut): ?>
+                            <a href="<?= htmlspecialchars($href) ?>" class="stretched-link"></a>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
-</div>
-
-
-
-<style>
-/* Modern styling for the cards */
-.item-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    <?php
 }
-.item-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d4daa">
+    <title>WVSU CONNECT — Student marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php include __DIR__ . '/head_assets.php'; ?>
+</head>
+<body class="wvsu-home-page">
+
+<?php include 'navbar.php'; ?>
+
+<?php
+/** Master read so counts match what you just published (replica lag can hide new services/products). */
+$heroCounts = fetch_master(
+    "SELECT
+        (SELECT COUNT(*) FROM listings WHERE status = 'active' AND listing_type = 'product') AS pc,
+        (SELECT COUNT(*) FROM listings WHERE status = 'active' AND listing_type = 'service') AS sc"
+);
+if (! is_array($heroCounts)) {
+    $heroCounts = ['pc' => 0, 'sc' => 0];
 }
-/* Ensure product titles don't break layout */
-.text-truncate {
-    display: block;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+$heroProductCount = (int) ($heroCounts['pc'] ?? 0);
+$heroServiceCount = (int) ($heroCounts['sc'] ?? 0);
+$productSell = ! empty($_SESSION['user_id']) ? 'addproduct.php' : 'login.php?next=' . rawurlencode('addproduct.php');
+$serviceSell = ! empty($_SESSION['user_id']) ? 'addservice.php' : 'login.php?next=' . rawurlencode('addservice.php');
+$msgHref = ! empty($_SESSION['user_id'])
+    ? wvsu_user_messages_nav_state((int) $_SESSION['user_id'])['inbox_href']
+    : 'login.php?next=' . rawurlencode('messages.php');
+$yourListHref = ! empty($_SESSION['user_id']) ? 'your_listings.php' : 'login.php?next=' . rawurlencode('your_listings.php');
+?>
 
-/* Smooth Hover Effect */
-.hover-lift {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-.hover-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important;
-}
-.mt-n5 {
-    margin-top: -3.5rem; /* Pushes the cards up into the Hero image */
-}
+<section class="hero-market hero-market--clean text-white">
+    <div class="hero-market__mesh" aria-hidden="true"></div>
+    <div class="hero-market__bg" style="background-image: url('wvsucover.png');"></div>
+    <div class="hero-market__scrim"></div>
 
-body {
-    background-color: #fafafa; /* Deep Navy Background */
-    color: #131313;
-}
-
-
-
-</style>
-
-<style>
-/* Dim and disable interaction for sold-out cards */
-.item-card.sold-out {
-    opacity: 0.72;
-    filter: grayscale(20%);
-    cursor: default;
-    pointer-events: none;
-}
-</style>
-
-
-
-<footer class="bg-white border-top pt-5 pb-4 mt-5">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h5 class="fw-bold text-primary">WVSU <span class="text-dark">Marketplace</span></h5>
-                <p class="text-muted small mt-2">
-                    A dedicated platform for Taga-West to trade, share, and grow together within the campus community.
+    <div class="container position-relative py-5 py-lg-6">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9 hero-clean text-center text-lg-start">
+                <p class="hero-clean__eyebrow mb-3 mb-lg-4">WVSU Connect · Campus marketplace</p>
+                <h1 class="hero-clean__title mb-3 mb-lg-4">
+                    <span class="hero-clean__line d-block">Products and services,</span>
+                    <span class="hero-clean__line d-block"><span class="hero-clean__accent">one trusted place.</span></span>
+                </h1>
+                <p class="hero-clean__lead mb-4 mb-lg-5 mx-auto mx-lg-0">
+                    Buy from classmates, book student-run services, or list what you sell — chat and meet on campus.
                 </p>
-            </div>
 
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h6 class="fw-bold mb-3">Quick Links</h6>
-                <ul class="list-unstyled small">
-                    <li class="mb-2"><a href="index.php" class="text-decoration-none text-muted">Home</a></li>
-                    <li class="mb-2"><a href="products.php" class="text-decoration-none text-muted">Browse Products</a></li>
-                    <li class="mb-2"><a href="services.php" class="text-decoration-none text-muted">Explore Services</a></li>
-                </ul>
-            </div>
+                <p class="hero-clean__stats mb-4 mb-lg-5 mx-auto mx-lg-0">
+                    <span class="hero-clean__stat-num"><?= number_format(max(0, $heroProductCount)) ?></span> active products
+                    <span class="hero-clean__dot" aria-hidden="true"></span>
+                    <span class="hero-clean__stat-num"><?= number_format(max(0, $heroServiceCount)) ?></span> active services
+                </p>
 
-            <div class="col-md-4 text-md-end">
-                <h6 class="fw-bold mb-3">Project Team</h6>
-                <p class="text-muted small mb-0">Developed with ❤️ by</p>
-                <p class="fw-bold text-dark">Group 5 - WVSU Students</p>
-                <div class="mt-3">
-                    <i class="bi bi-facebook me-2 text-muted"></i>
-                    <i class="bi bi-github me-2 text-muted"></i>
-                    <i class="bi bi-envelope text-muted"></i>
+                <div class="d-flex flex-wrap gap-4 justify-content-center justify-content-lg-start align-items-center small hero-clean__foot">
+                    <a href="<?= htmlspecialchars($msgHref) ?>" class="text-white text-opacity-85 text-decoration-none hero-clean__link">
+                        <i class="bi bi-chat-dots me-1" aria-hidden="true"></i>Messages
+                    </a>
+                    <span class="text-white text-opacity-50 d-none d-sm-inline">·</span>
+                    <span class="text-white text-opacity-75">Meet in public spots on campus</span>
+                    <span class="text-white text-opacity-50 d-none d-sm-inline">·</span>
+                    <a href="#get-started" class="text-white text-opacity-85 text-decoration-none hero-clean__link">How it works</a>
+                    <span class="text-white text-opacity-50 d-none d-sm-inline">·</span>
+                    <a href="#recently-listed" class="text-white text-opacity-85 text-decoration-none hero-clean__link d-inline-flex align-items-center gap-1">
+                        Latest listings <i class="bi bi-arrow-down-short fs-5" aria-hidden="true"></i>
+                    </a>
                 </div>
             </div>
         </div>
+    </div>
+</section>
 
-        <hr class="my-4 text-muted opacity-25">
+<main class="wvsu-home-flow">
 
-        <div class="row align-items-center">
-            <div class="col-md-6 small text-muted">
-                &copy; 2026 WVSU Marketplace. For Academic Purposes Only.
+<section id="get-started" class="wvsu-home-panel wvsu-process-show scroll-margin-top" data-io-animate>
+    <div class="container wvsu-home-container py-5 py-lg-6">
+        <div class="wvsu-process-show__ribbon mx-auto mb-4 mb-lg-5">
+            <span class="wvsu-process-show__ribbon-dot"></span>
+            Peer-to-peer, on campus
+            <span class="wvsu-process-show__ribbon-sep"></span>
+            Chat stays on-platform
+            <span class="wvsu-process-show__ribbon-sep"></span>
+            Browse free — list when you&apos;re ready
+        </div>
+
+        <header class="wvsu-process-show__head text-center mx-auto mb-4 mb-lg-5">
+            <span class="wvsu-home-eyebrow">Our process</span>
+            <h2 class="wvsu-home-section-title mb-3">Three moves, one flow — <span class="wvsu-home-section-title-accent">deal closed, awkwardness optional.</span></h2>
+            <p class="wvsu-home-section-desc mx-auto mb-4">Here&apos;s the play-by-play: list or browse → hash it out in Messages → meet somewhere everyone already passes through. Campus marketplace energy, minus the scavenger hunt.</p>
+
+            <div class="wvsu-process-show__cta-bar justify-content-center" role="navigation" aria-label="Quick marketplace links">
+                <a href="products.php" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                    <i class="bi bi-bag-fill me-1" aria-hidden="true"></i>Browse products
+                </a>
+                <a href="services.php" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-palette2 me-1" aria-hidden="true"></i>Browse services
+                </a>
+                <a href="<?= htmlspecialchars($msgHref) ?>" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-chat-dots-fill me-1" aria-hidden="true"></i>Open Messages
+                </a>
+                <a href="#recently-listed" class="btn btn-link fw-semibold text-decoration-none py-2">See latest listings <i class="bi bi-arrow-down-short ms-1" aria-hidden="true"></i></a>
             </div>
-            <div class="col-md-6 text-md-end small">
-                <a href="#" class="text-decoration-none text-muted me-3">Privacy Policy</a>
-                <a href="#" class="text-decoration-none text-muted">Terms of Use</a>
+        </header>
+
+        <div class="wvsu-process-show__timeline wvsu-stagger">
+            <article class="wvsu-process-step" aria-label="Step 1: Lead with clarity">
+                <div class="wvsu-process-step__body">
+                    <div class="wvsu-process-step__bubble wvsu-process-step__bubble--1" aria-hidden="true">
+                        <span class="wvsu-process-step__bubble-kicker">Step</span>
+                        <span class="wvsu-process-step__bubble-digit">1</span>
+                    </div>
+                    <div class="wvsu-process-step__icon-wrap" aria-hidden="true"><i class="bi bi-camera"></i></div>
+                    <h3 class="wvsu-process-step__hook">Lead with clarity</h3>
+                    <p class="wvsu-process-step__lead">Bold photos. Straight price tag. Answers to &ldquo;how much?&rdquo; and &ldquo;still available?&rdquo; before they ping you.</p>
+                    <ul class="wvsu-process-step__bullets list-unstyled mb-0">
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> <span>Works for <strong>products</strong> and <strong>services</strong> — spell out what buyers actually receive.</span></li>
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> <span>Honest descriptions &rarr; fewer flaky meet-ups.</span></li>
+                    </ul>
+                    <div class="wvsu-process-step__actions">
+                        <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">List a product</a>
+                        <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold text-dark">Offer a service</a>
+                        <a href="<?= htmlspecialchars($yourListHref) ?>" class="btn btn-link btn-sm px-2 fw-semibold">Manage listings</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="wvsu-process-step" aria-label="Step 2: Lock in with Messages">
+                <div class="wvsu-process-step__body">
+                    <div class="wvsu-process-step__bubble wvsu-process-step__bubble--2" aria-hidden="true">
+                        <span class="wvsu-process-step__bubble-kicker">Step</span>
+                        <span class="wvsu-process-step__bubble-digit">2</span>
+                    </div>
+                    <div class="wvsu-process-step__icon-wrap" aria-hidden="true"><i class="bi bi-chat-dots-fill"></i></div>
+                    <h3 class="wvsu-process-step__hook">Lock in with Messages</h3>
+                    <p class="wvsu-process-step__lead">Negotiate time, pickup spot, and final price inside WVSU Connect — neat paper trail when you need it.</p>
+                    <ul class="wvsu-process-step__bullets list-unstyled mb-0">
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> No more scavenger hunts through three group chats.</li>
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> Keep it campus-friendly until you&apos;re ready to meet.</li>
+                    </ul>
+                    <div class="wvsu-process-step__actions">
+                        <a href="<?= htmlspecialchars($msgHref) ?>" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-chat-dots me-1" aria-hidden="true"></i>Open Messages
+                        </a>
+                        <a href="safety.php" class="btn btn-link btn-sm px-2 fw-semibold">Safety tips</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="wvsu-process-step" aria-label="Step 3: Meet where people already are">
+                <div class="wvsu-process-step__body">
+                    <div class="wvsu-process-step__bubble wvsu-process-step__bubble--3" aria-hidden="true">
+                        <span class="wvsu-process-step__bubble-kicker">Step</span>
+                        <span class="wvsu-process-step__bubble-digit">3</span>
+                    </div>
+                    <div class="wvsu-process-step__icon-wrap" aria-hidden="true"><i class="bi bi-geo-alt-fill"></i></div>
+                    <h3 class="wvsu-process-step__hook">Meet where people already are</h3>
+                    <p class="wvsu-process-step__lead">Prefer busy hubs — think <strong>Quezon Hall</strong> markers or <strong>CAF court</strong>. Inspect goods, handshake on service scope, pay when satisfied.</p>
+                    <ul class="wvsu-process-step__bullets list-unstyled mb-0">
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> Bring a buddy if you&apos;re meeting someone new.</li>
+                        <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> If it feels off, walk away — your call, full stop.</li>
+                    </ul>
+                    <div class="wvsu-process-step__actions">
+                        <a href="products.php" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">Hunt deals</a>
+                        <a href="services.php" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">Find services</a>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <p class="text-center text-muted small mt-5 mb-0 pb-lg-1">
+            <a href="safety.php" class="fw-semibold text-decoration-none">Safety &amp; meetups<i class="bi bi-arrow-right-short fs-5 align-middle" aria-hidden="true"></i></a>
+            — meet smart on campus.</p>
+    </div>
+</section>
+
+<div id="recently-listed" class="container wvsu-home-container py-5 py-lg-6 scroll-margin-top mb-5" data-io-animate>
+    <header class="wvsu-home-section-head wvsu-home-section-head--split d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-start gap-3 mb-4 mb-lg-5">
+        <div class="text-center text-lg-start">
+            <span class="wvsu-home-eyebrow">Fresh drops</span>
+            <h2 class="wvsu-home-section-title mb-2 mb-lg-1">Recently listed</h2>
+            <p class="wvsu-home-section-desc mb-0 mx-auto mx-lg-0">Latest products and services from your campus marketplace.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-end align-items-center flex-shrink-0">
+            <a href="products.php" class="btn btn-primary rounded-pill px-4 fw-semibold wvsu-home-chip-btn shadow-sm"><i class="bi bi-bag-fill me-1"></i>All products</a>
+            <a href="services.php" class="btn btn-outline-primary rounded-pill px-4 fw-semibold wvsu-home-chip-btn"><i class="bi bi-palette2 me-1"></i>All services</a>
+        </div>
+    </header>
+
+    <?php
+    $recentListSqlBase = '
+         SELECT l.*, c.name AS category_name, u.full_name AS owner_name, p.price, p.stock, s.rate, s.rate_type
+         FROM listings l
+         LEFT JOIN categories c ON l.category_id = c.category_id
+         LEFT JOIN users u ON l.owner_id = u.user_id
+         LEFT JOIN products p ON p.listing_id = l.listing_id
+         LEFT JOIN services s ON s.listing_id = l.listing_id
+         WHERE l.status = ? AND l.listing_type = ?
+         ORDER BY l.created_at DESC
+         LIMIT 4';
+    $recentProducts = fetchAll($recentListSqlBase, ['active', 'product']);
+    $recentServices = fetchAll($recentListSqlBase, ['active', 'service']);
+    $hasRecentAny = ($recentProducts !== [] || $recentServices !== []);
+    ?>
+
+    <?php if (! $hasRecentAny): ?>
+        <div class="alert alert-light border rounded-4 text-muted">Nothing new yet — open <a href="products.php" class="fw-semibold">products</a> or <a href="services.php" class="fw-semibold">services</a> anytime.</div>
+    <?php else: ?>
+        <?php if ($recentProducts !== []): ?>
+            <div class="mb-5" id="recent-products">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h3 class="h5 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary" style="width:2rem;height:2rem;"><i class="bi bi-bag-fill"></i></span>
+                        Recent products
+                    </h3>
+                    <a href="products.php" class="small fw-semibold text-decoration-none">View all products <i class="bi bi-arrow-right-short fs-5 align-middle"></i></a>
+                </div>
+                <div class="row g-4 wvsu-stagger">
+                    <?php foreach ($recentProducts as $item): wvsu_index_render_recent_card($item); endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($recentServices !== []): ?>
+            <div class="<?= $recentProducts !== [] ? 'mt-5 pt-2 border-top border-secondary-subtle' : '' ?>" id="recent-services">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 <?= $recentProducts !== [] ? 'mt-4' : '' ?>">
+                    <h3 class="h5 fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-info-subtle text-info" style="width:2rem;height:2rem;"><i class="bi bi-palette2"></i></span>
+                        Recent services
+                    </h3>
+                    <a href="services.php" class="small fw-semibold text-info text-decoration-none">View all services <i class="bi bi-arrow-right-short fs-5 align-middle"></i></a>
+                </div>
+                <div class="row g-4 wvsu-stagger">
+                    <?php foreach ($recentServices as $item): wvsu_index_render_recent_card($item); endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
+
+    <section class="container wvsu-home-container mb-4 mb-lg-5 pb-3" aria-label="Get started selling" data-io-animate>
+        <div class="wvsu-process-show__finale rounded-4 p-4 p-lg-5 text-center">
+            <p class="wvsu-process-show__finale-tag text-uppercase mb-2">Go time</p>
+            <h3 class="wvsu-process-show__finale-title mb-2">Thousands of taps start with one — yours can be next.</h3>
+            <p class="wvsu-process-show__finale-desc mx-auto mb-4 mb-lg-5">Shopping, hustling side income, booking a barkada artist? Same playbook: list or browse → message → meet on campus.</p>
+            <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 justify-content-center align-items-stretch align-items-sm-center">
+                <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-warning rounded-pill px-4 fw-bold text-dark shadow-sm"><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>Sell something today</a>
+                <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-outline-light rounded-pill px-4 fw-semibold border-2">Monetize a skill</a>
+                <a href="#recently-listed" class="btn btn-link fw-semibold text-white text-opacity-90">Jump to newest listings ↑</a>
             </div>
         </div>
-    </div>
-</footer>
+    </section>
+
+</main>
+
+<?php include __DIR__ . '/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

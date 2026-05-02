@@ -1,5 +1,8 @@
 <?php
-require_once 'db_conn.php';
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/db_conn.php';
 
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -11,72 +14,149 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$me = intval($_SESSION['user_id']);
-$conv = intval($_POST['conv_id'] ?? 0);
-$qty = max(1, intval($_POST['quantity'] ?? 1));
-if ($conv <= 0) die('Invalid conversation');
+$me = (int) $_SESSION['user_id'];
+$conv = (int) ($_POST['conv_id'] ?? 0);
+$qty = max(1, (int) ($_POST['quantity'] ?? 1));
+$listing_id = (int) ($_POST['listing_id'] ?? 0);
 
-// Find mapped listing
-$map = fetch("SELECT listing_id FROM conversation_listings WHERE conversation_id = ? LIMIT 1", [$conv]);
-if (!$map) die('No listing attached to this conversation');
-$listing_id = intval($map['listing_id']);
+if ($conv <= 0) {
+    header('Location: messages.php?error=complete_tx');
+    exit;
+}
 
-// Fetch listing and product
-$item = fetch("SELECT l.*, p.price, p.stock FROM listings l JOIN products p ON p.listing_id = l.listing_id WHERE l.listing_id = ? LIMIT 1", [$listing_id]);
-if (!$item) die('Listing not found');
+if ($listing_id <= 0) {
+    $pick = fetch_master(
+        'SELECT cl.listing_id FROM conversation_listings cl
+            INNER JOIN listings l ON l.listing_id = cl.listing_id
+            WHERE cl.conversation_id = ? AND l.owner_id = ?
+            ORDER BY cl.id DESC
+            LIMIT 1',
+        [(string) $conv, (string) $me]
+    );
+    if ($pick) {
+        $listing_id = (int) $pick['listing_id'];
+    }
+}
 
-// Verify current user is owner of listing
-if (intval($item['owner_id']) !== $me) die('Only the seller can complete the transaction');
+if ($listing_id <= 0) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_no_listing');
+    exit;
+}
 
-// Identify buyer (other participant)
-$c = fetch("SELECT participant_a, participant_b FROM conversations WHERE conversation_id = ? LIMIT 1", [$conv]);
-if (!$c) die('Conversation not found');
-$other = ($c['participant_a'] == $me) ? $c['participant_b'] : $c['participant_a'];
-$buyer_id = intval($other);
+$mapped = fetch_master(
+    'SELECT 1 AS ok FROM conversation_listings WHERE conversation_id = ? AND listing_id = ? LIMIT 1',
+    [(string) $conv, (string) $listing_id]
+);
+if (! $mapped) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_bad_listing');
+    exit;
+}
 
-if ($buyer_id <= 0) die('Buyer not found');
+$item = fetch_master(
+    'SELECT l.listing_id, l.owner_id, l.title, l.listing_type, p.price, p.stock
+     FROM listings l
+     INNER JOIN products p ON p.listing_id = l.listing_id
+     WHERE l.listing_id = ?
+     LIMIT 1',
+    [(string) $listing_id]
+);
 
-if (intval($item['stock']) < $qty) die('Not enough stock');
+if (! $item) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_product_only');
+    exit;
+}
 
-$total = floatval($item['price']) * $qty;
+if (strtolower(trim((string) ($item['listing_type'] ?? 'product'))) !== 'product') {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_product_only');
+    exit;
+}
+
+if ((int) $item['owner_id'] !== $me) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_seller_only');
+    exit;
+}
+
+$c = fetch_master(
+    'SELECT participant_a, participant_b FROM conversations WHERE conversation_id = ? LIMIT 1',
+    [(string) $conv]
+);
+if (! $c) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    exit;
+}
+
+$a = (int) $c['participant_a'];
+$b = (int) $c['participant_b'];
+if ($me !== $a && $me !== $b) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    exit;
+}
+
+$buyer_id = ($a === $me) ? $b : $a;
+
+if ($buyer_id <= 0) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    exit;
+}
+
+$stock = (int) $item['stock'];
+if ($stock < $qty) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_stock');
+    exit;
+}
 
 global $master_conn;
-$master_conn->begin_transaction();
-try {
-    // decrement stock by seller-provided quantity
-    insert("UPDATE products SET stock = stock - ? WHERE listing_id = ?", [$qty, $listing_id]);
 
-    // mark listing sold_out if stock now 0
-    $newStockRow = fetch("SELECT stock FROM products WHERE listing_id = ? LIMIT 1", [$listing_id]);
-    if ($newStockRow && intval($newStockRow['stock']) <= 0) {
-        insert("UPDATE listings SET status = 'sold_out' WHERE listing_id = ?", [$listing_id]);
-    }
-
-    // ensure conversation_meta exists and mark closed
-    $create_meta = "CREATE TABLE IF NOT EXISTS conversation_meta (
+$ensureMeta = static function () use ($master_conn): void {
+    $master_conn->query(
+        'CREATE TABLE IF NOT EXISTS conversation_meta (
             conversation_id INT UNSIGNED NOT NULL PRIMARY KEY,
             is_closed TINYINT(1) NOT NULL DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-    $master_conn->query($create_meta);
-    $exists = fetch("SELECT conversation_id FROM conversation_meta WHERE conversation_id = ? LIMIT 1", [$conv]);
-    if ($exists) {
-        insert("UPDATE conversation_meta SET is_closed = 1 WHERE conversation_id = ?", [$conv]);
-    } else {
-        insert("INSERT INTO conversation_meta (conversation_id, is_closed) VALUES (?, 1)", [$conv]);
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+};
+
+if (! $master_conn->begin_transaction()) {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    exit;
+}
+
+try {
+    insert('UPDATE products SET stock = stock - ? WHERE listing_id = ?', [(string) $qty, (string) $listing_id]);
+
+    $newStockRow = fetch_master('SELECT stock FROM products WHERE listing_id = ? LIMIT 1', [(string) $listing_id]);
+    if ($newStockRow && (int) $newStockRow['stock'] <= 0) {
+        insert('UPDATE listings SET status = \'sold_out\' WHERE listing_id = ?', [(string) $listing_id]);
     }
 
-    // insert message announcing completion
-    $content = "Seller completed transaction. Quantity deducted: {$qty}.";
-    insert("INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)", [$conv, $me, $content]);
-    insert("UPDATE conversations SET last_message_at = current_timestamp() WHERE conversation_id = ?", [$conv]);
+    $ensureMeta();
+    insert(
+        'INSERT INTO conversation_meta (conversation_id, is_closed) VALUES (?, 1)
+         ON DUPLICATE KEY UPDATE is_closed = 1',
+        [(string) $conv]
+    );
+
+    $title = trim((string) ($item['title'] ?? 'item'));
+    if ($title === '') {
+        $title = 'item';
+    }
+    $content = 'Seller completed sale for “' . $title . '”. Quantity deducted: ' . $qty . '.';
+
+    insert(
+        'INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)',
+        [(string) $conv, (string) $me, $content]
+    );
+    insert(
+        'UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE conversation_id = ?',
+        [(string) $conv]
+    );
 
     $master_conn->commit();
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $master_conn->rollback();
-    die('Failed to complete transaction: ' . $e->getMessage());
+    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_failed');
+    exit;
 }
 
 header('Location: messages.php?conv=' . $conv . '&success=transaction_completed');
 exit;
-
-?>

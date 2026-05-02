@@ -1,0 +1,4 @@
+db_config.local.php
+profile_edit_debug.log
+*.log
+.DS_Store
