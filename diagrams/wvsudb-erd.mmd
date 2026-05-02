@@ -1,0 +1,292 @@
+%% =============================================================================
+%% WVSU Connect — Entity Relationship Diagram (wvsudb.sql)
+%% =============================================================================
+%% HOW TO USE IN draw.io (diagrams.net)
+%%   1. Arrange → Insert → Advanced → Mermaid
+%%   2. Paste everything from "erDiagram" through the final "}" (inclusive).
+%%   3. Insert. Ungroup if you need to move individual tables (right-click).
+%%
+%% TIP: Entity blocks are listed FIRST so edges reliably connect in Mermaid /
+%%   draw.io. Relationships use the same identifiers as the blocks below.
+%%
+%% NOT IN THIS DIAGRAM: replication_live_test*, uploaded_files_test (non-domain).
+%% LOGICAL ONLY (no FK in dump): conversation_listings; user_reports.conversation_id
+%% =============================================================================
+
+erDiagram
+
+  admin_actions {
+    int action_id PK
+    int admin_id FK
+    string action_type
+    int target_entity_id
+    string entity_type
+    text notes
+    timestamp performed_at
+  }
+
+  audit_logs {
+    int log_id PK
+    int user_id FK
+    string event_type
+    string entity_type
+    int entity_id
+    text metadata_json
+    timestamp logged_at
+  }
+
+  categories {
+    int category_id PK
+    string name
+    string category_type
+    int parent_type FK
+  }
+
+  conversation_listings {
+    int id PK
+    int conversation_id FK
+    int listing_id FK
+    timestamp created_at
+  }
+
+  conversation_meta {
+    int conversation_id PK
+    int is_closed
+  }
+
+  conversations {
+    int conversation_id PK
+    int participant_a FK
+    int participant_b FK
+    timestamp created_at
+    timestamp last_message_at
+  }
+
+  item_status {
+    int status_id PK
+    int listing_id FK
+    string old_status
+    string new_status
+    int changed_by FK
+    text reason
+    timestamp changed_at
+  }
+
+  listings {
+    int listing_id PK
+    int owner_id FK
+    int category_id FK
+    string listing_type
+    string title
+    text description
+    string image_url
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  messages {
+    int message_id PK
+    int conversation_id FK
+    int sender_id FK
+    text content
+    timestamp sent_at
+    int is_read
+    string message_type
+    string image_url
+  }
+
+  product_orders {
+    int order_id PK
+    int transaction_id FK
+    text delivery_address
+    timestamp delivered_at
+  }
+
+  products {
+    int product_id PK
+    int listing_id FK
+    decimal price
+    int stock
+  }
+
+  reviews {
+    int review_id PK
+    int reviewer_id FK
+    int transaction_id FK
+    int rating
+    text comment
+    timestamp created_at
+  }
+
+  roles {
+    int role_id PK
+    string name
+    text permissions_json
+  }
+
+  service_bookings {
+    int booking_id PK
+    int transaction_id FK
+    text requirements
+    decimal agreed_price
+    timestamp scheduled_at
+  }
+
+  service_portfolio_items {
+    int portfolio_id PK
+    int listing_id FK
+    string media_type
+    string file_path
+    int grid_span
+    int sort_order
+    timestamp created_at
+  }
+
+  service_pricing_items {
+    int price_item_id PK
+    int listing_id FK
+    string item_name
+    decimal amount
+    int sort_order
+    timestamp created_at
+  }
+
+  services {
+    int service_id PK
+    int listing_id FK
+    decimal rate
+    string rate_type
+  }
+
+  transactions {
+    int transaction_id PK
+    int buyer_id FK
+    int listing_id FK
+    string transaction_type
+    int quantity
+    decimal total_price
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  user_reports {
+    int report_id PK
+    int reporter_id FK
+    int target_user_id FK
+    int listing_id FK
+    int conversation_id
+    string reason_type
+    text details
+    string status
+    timestamp created_at
+    timestamp resolved_at
+    int resolved_by FK
+    text resolution_notes
+  }
+
+  user_reviews {
+    int review_id PK
+    int reviewer_id FK
+    int reviewee_id FK
+    int listing_id FK
+    int rating
+    text comment
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  user_sessions {
+    int session_id PK
+    int user_id FK
+    string session_token
+    string ip_address
+    text user_agent
+    timestamp login_at
+    timestamp logout_at
+    int is_active
+    timestamp last_activity
+  }
+
+  users {
+    int user_id PK
+    int role_id FK
+    string full_name
+    string email
+    string password
+    string profile_pic_url
+    int is_active
+    int is_verified
+    text bio
+    string social_instagram
+    string social_facebook
+    string social_x
+    string social_tiktok
+    string social_linkedin
+    string social_website
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  %% ----- Relationships (after entities so connectors render reliably) -----
+
+  roles ||--o{ users : assigns
+
+  users ||--o{ user_sessions : has_session
+
+  categories ||--o{ categories : parent_is
+
+  categories ||--o{ listings : classified_as
+
+  users ||--o{ listings : owns
+
+  listings ||--o{ products : product_detail
+
+  listings ||--o{ services : service_detail
+
+  listings ||--o{ service_portfolio_items : portfolio
+
+  listings ||--o{ service_pricing_items : price_line
+
+  listings ||--o{ item_status : status_history
+
+  users ||--o{ transactions : buys
+
+  listings ||--o{ transactions : sold_via
+
+  transactions ||--|| product_orders : order_detail
+
+  transactions ||--|| service_bookings : booking_detail
+
+  transactions ||--o| reviews : txn_review_legacy
+
+  users ||--o{ reviews : writes_review
+
+  users ||--o{ user_reviews : reviewer_and_reviewee
+
+  listings ||--o{ user_reviews : optional_listing_context
+
+  users ||--o{ conversations : participant_a_and_b
+
+  conversations ||--o{ conversation_listings : thread_lists
+
+  listings ||--o{ conversation_listings : listed_in_thread
+
+  conversations ||--|| conversation_meta : meta
+
+  conversations ||--o{ messages : contains
+
+  users ||--o{ messages : sends
+
+  users ||--o{ user_reports : reporter_target_resolver
+
+  listings ||--o{ user_reports : optional_listing
+
+  conversations ||--o{ user_reports : optional_thread
+
+  users ||--o{ admin_actions : moderator_action
+
+  users ||--o{ audit_logs : optional_actor
+
+  users ||--o{ item_status : changed_status
