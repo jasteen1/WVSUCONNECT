@@ -1,12 +1,14 @@
 # WVSU Connect database ERD
 
+**Broader context (architecture, flows, setup):** see [`WVSU-Connect-Documentation.md`](WVSU-Connect-Documentation.md).
+
 This document explains the **Entity Relationship Diagram** for the WVSU Connect MariaDB schema. The live diagram source is the project SQL dump and migrations; the visual diagram is maintained as Mermaid for easy import into **diagrams.net (draw.io)** and other tools.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| [`diagrams/wvsudb-erd.mmd`](../diagrams/wvsudb-erd.mmd) | Mermaid `erDiagram`: entities first, then relationships (helps connectors render). Paste into draw.io → **Arrange → Insert → Advanced → Mermaid**. |
+| [`diagrams/wvsudb-erd.mmd`](../diagrams/wvsudb-erd.mmd) | Mermaid `erDiagram`: entities first, then relationships (helps connectors render). **Paste the whole file** into draw.io → **Arrange → Insert → Advanced → Mermaid** (file starts at `erDiagram`; no leading `%` comment block — draw.io’s Mermaid bundle does not accept `%%…` lines before `erDiagram`). The **`categories`** self-link (`parent_type` → parent row) is **not drawn as an edge**, because diagrams.net lays out same-table loops as huge broken curves; draw that link by hand there if you need it—the column is still shown on the **`categories`** box. |
 | `wvsudb.sql` | Canonical dump of table definitions, indexes, and foreign keys. |
 
 ## How to read the ERD
@@ -64,7 +66,7 @@ The schema groups naturally into these areas:
 
 - **`user_reports`** — User-generated reports (reporter, reported user, optional listing, optional conversation context, resolution).
 - **`admin_actions`** — Record of moderator/admin actions.
-- **`audit_logs`** — Event stream (optional `user_id` for the acting user).
+- **`audit_logs`** — Event stream (optional `user_id` when the app inserts a row; **`NULL`** when the row is written by a **database trigger**—see [`WVSU-Connect-Documentation.md`](WVSU-Connect-Documentation.md) §12).
 
 **Logical link:** `user_reports.conversation_id` references a conversation in the app but **may not have a declared FK** in `wvsudb.sql`; the ERD still shows an edge for clarity.
 

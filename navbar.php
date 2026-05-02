@@ -21,6 +21,9 @@ $navServiceSell = !empty($_SESSION['user_id'])
     : 'login.php?next=' . rawurlencode('addservice.php');
 /** Sticky nav scrolls page content underneath it; messages is a full-height inbox where that hides the chat header. */
 $navStickyClass = ($navActive === 'messages.php') ? '' : ' sticky-top';
+
+include __DIR__ . '/entry_loader.inc.php';
+
 ?>
 <nav class="navbar navbar-expand-lg navbar-wvsu py-2<?= $navStickyClass ?>">
     <div class="container">

@@ -1,0 +1,360 @@
+/* Entry splash — WVSU theme (navy / primary blue / accent gold) */
+
+html.wvsu-entry-lock,
+html.wvsu-entry-lock body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.wvsu-entry-splash {
+  /* Align with css/wvsu-connect-theme.css */
+  --splash-navy: #0a1628;
+  --splash-navy-mid: #111f38;
+  --splash-primary: #0d4daa;
+  --splash-primary-soft: rgba(13, 77, 170, 0.45);
+  --splash-accent: #f5b408;
+  --splash-accent-soft: rgba(245, 180, 8, 0.35);
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  background-color: var(--splash-navy);
+  background-image:
+    radial-gradient(
+      ellipse 90% 75% at 50% 42%,
+      rgba(13, 77, 170, 0.38) 0%,
+      rgba(10, 22, 40, 0.55) 45%,
+      var(--splash-navy) 78%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 8% 12%,
+      rgba(245, 180, 8, 0.12),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 48% at 92% 88%,
+      rgba(13, 77, 170, 0.22),
+      transparent 52%
+    ),
+    linear-gradient(
+      168deg,
+      #060d18 0%,
+      var(--splash-navy-mid) 38%,
+      var(--splash-navy) 100%
+    );
+  isolation: isolate;
+  opacity: 1;
+  transform: translateZ(0) scale(1);
+  visibility: visible;
+  transition:
+    opacity 0.82s cubic-bezier(0.32, 0.94, 0.45, 1),
+    transform 1.05s cubic-bezier(0.32, 0.94, 0.45, 1),
+    filter 0.7s ease;
+}
+
+.wvsu-entry-splash__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(13, 77, 170, 0.15) 0%,
+    transparent 55%
+  );
+  animation: wvsuEntryGlowPulse 5.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes wvsuEntryGlowPulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.wvsu-entry-splash--exiting {
+  pointer-events: none;
+  opacity: 0 !important;
+  transform: translateZ(0) scale(1.045) translateY(-1.75%);
+  filter: blur(20px);
+}
+
+.wvsu-entry-splash__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 36%,
+    rgba(6, 10, 20, 0.72) 100%
+  );
+  pointer-events: none;
+}
+
+.wvsu-entry-splash__noise {
+  position: absolute;
+  inset: -4%;
+  opacity: 0.08;
+  background-image: repeating-radial-gradient(
+    circle at 25% -5%,
+    rgba(138, 180, 248, 0.06) 0 0.85px,
+    transparent 1px 3px
+  );
+  animation: wvsuEntryNoiseShift 520ms linear infinite;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+
+@keyframes wvsuEntryNoiseShift {
+  to {
+    transform: translate(-2%, 3%);
+  }
+}
+
+.wvsu-entry-splash__scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    transparent 0 2px,
+    rgba(13, 77, 170, 0.04) 2px 3px
+  );
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  animation: wvsuEntryScanPulse 7s ease-in-out infinite alternate;
+}
+
+@keyframes wvsuEntryScanPulse {
+  from {
+    opacity: 0.048;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.082;
+    transform: translateY(3px);
+  }
+}
+
+.wvsu-entry-splash__rings {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(118vw, 960px);
+  height: min(118vw, 960px);
+  pointer-events: none;
+}
+
+.wvsu-entry-splash__ring {
+  position: absolute;
+  inset: 7%;
+  border: 1px solid rgba(138, 180, 248, 0.12);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(13, 77, 170, 0.08),
+    0 0 48px rgba(13, 77, 170, 0.06);
+  opacity: 0.62;
+  animation: wvsuEntryRing 6.5s cubic-bezier(0.45, 0, 0.15, 1) infinite;
+}
+
+.wvsu-entry-splash__ring:nth-child(2) {
+  inset: -2%;
+  animation-delay: -2.1s;
+  border-color: rgba(245, 180, 8, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(245, 180, 8, 0.06),
+    0 0 40px rgba(245, 180, 8, 0.04);
+}
+
+.wvsu-entry-splash__ring:nth-child(3) {
+  inset: -18%;
+  animation-delay: -4.2s;
+  border-color: rgba(13, 77, 170, 0.09);
+}
+
+@keyframes wvsuEntryRing {
+  from {
+    transform: rotateZ(0deg) scale(0.988);
+    opacity: 0.42;
+    border-color: rgba(138, 180, 248, 0.1);
+    filter: blur(0);
+  }
+  50% {
+    transform: rotateZ(180deg) scale(1.035);
+    opacity: 0.82;
+    border-color: rgba(245, 200, 100, 0.22);
+    filter: blur(0.35px);
+  }
+  to {
+    transform: rotateZ(360deg) scale(0.988);
+    opacity: 0.42;
+    border-color: rgba(138, 180, 248, 0.1);
+    filter: blur(0);
+  }
+}
+
+.wvsu-entry-splash__core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(1.35rem, 3.25vw, 2rem);
+  padding: clamp(1rem, 4vw, 2rem);
+  margin: 0 auto;
+  width: 100%;
+  max-width: min(96vw, 480px);
+  box-sizing: border-box;
+}
+
+.wvsu-entry-splash__beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(140%, 480px);
+  height: clamp(220px, 38vh, 380px);
+  transform: translate(-50%, -58%);
+  background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(245, 180, 8, 0.22) 0%,
+      rgba(13, 77, 170, 0.18) 38%,
+      transparent 72%
+    );
+  filter: blur(28px);
+  opacity: 0.72;
+  animation: wvsuEntryBreathBeam 5.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wvsuEntryBreathBeam {
+  from {
+    opacity: 0.55;
+    transform: translate(-50%, -58%) scale(0.96, 1.02);
+  }
+  to {
+    opacity: 0.85;
+    transform: translate(-50%, -54%) scale(1.04, 1.07);
+  }
+}
+
+.wvsu-entry-splash__logo-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.wvsu-entry-splash__logo {
+  display: block;
+  margin: 0 auto;
+  max-width: min(70vw, 280px);
+  max-height: min(48vh, 280px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center center;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 4px 28px rgba(8, 20, 50, 0.55))
+    drop-shadow(0 0 36px rgba(255, 255, 255, 0.12))
+    drop-shadow(0 0 40px rgba(13, 77, 170, 0.28))
+    drop-shadow(0 0 22px rgba(245, 180, 8, 0.14));
+  animation: wvsuEntryLogoGlow 3.1s cubic-bezier(0.5, 0, 0.45, 1) infinite alternate,
+    wvsuEntryLogoDrift 7.5s ease-in-out infinite;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes wvsuEntryLogoGlow {
+  0% {
+    filter: drop-shadow(0 4px 24px rgba(8, 20, 50, 0.5))
+      drop-shadow(0 0 28px rgba(255, 255, 255, 0.08))
+      drop-shadow(0 0 32px rgba(13, 77, 170, 0.22))
+      drop-shadow(0 0 18px rgba(245, 180, 8, 0.1))
+      saturate(1) brightness(1);
+    opacity: 0.94;
+  }
+  100% {
+    filter: drop-shadow(0 6px 34px rgba(8, 20, 50, 0.58))
+      drop-shadow(0 0 44px rgba(255, 255, 255, 0.14))
+      drop-shadow(0 0 52px rgba(13, 77, 170, 0.34))
+      drop-shadow(0 0 28px rgba(245, 180, 8, 0.18))
+      saturate(1.04) brightness(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes wvsuEntryLogoDrift {
+  from {
+    transform: translateY(0) rotate(-0.45deg);
+  }
+  to {
+    transform: translateY(5px) rotate(0.45deg);
+  }
+}
+
+.wvsu-entry-splash__bar {
+  position: relative;
+  width: min(200px, 52vw);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(13, 77, 170, 0.12);
+}
+
+.wvsu-entry-splash__bar-fill {
+  display: block;
+  height: 100%;
+  width: 44%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--splash-primary-soft) 32%,
+    var(--splash-accent) 50%,
+    rgba(250, 220, 130, 0.95) 58%,
+    var(--splash-primary-soft) 72%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  transform: translateX(-120%);
+  animation: wvsuEntryBarSweep 1.35s cubic-bezier(0.55, 0.06, 0.19, 0.93) infinite;
+}
+
+@keyframes wvsuEntryBarSweep {
+  from {
+    transform: translateX(-130%);
+    opacity: 0.65;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(230%);
+    opacity: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wvsu-entry-splash__glow,
+  .wvsu-entry-splash__noise,
+  .wvsu-entry-splash__scanlines,
+  .wvsu-entry-splash__ring,
+  .wvsu-entry-splash__beam,
+  .wvsu-entry-splash__logo,
+  .wvsu-entry-splash__bar-fill {
+    animation: none !important;
+  }
+
+  .wvsu-entry-splash__bar-fill {
+    transform: translateX(38%);
+    opacity: 0.45;
+  }
+}

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Optional: git config core.hooksPath .githooks
+ROOT="$(git rev-parse --show-toplevel)"
+exec "$ROOT/sync-to-htdocs.sh"

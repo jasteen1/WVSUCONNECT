@@ -1,18 +1,3 @@
-%% =============================================================================
-%% WVSU Connect — Entity Relationship Diagram (wvsudb.sql)
-%% =============================================================================
-%% HOW TO USE IN draw.io (diagrams.net)
-%%   1. Arrange → Insert → Advanced → Mermaid
-%%   2. Paste everything from "erDiagram" through the final "}" (inclusive).
-%%   3. Insert. Ungroup if you need to move individual tables (right-click).
-%%
-%% TIP: Entity blocks are listed FIRST so edges reliably connect in Mermaid /
-%%   draw.io. Relationships use the same identifiers as the blocks below.
-%%
-%% NOT IN THIS DIAGRAM: replication_live_test*, uploaded_files_test (non-domain).
-%% LOGICAL ONLY (no FK in dump): conversation_listings; user_reports.conversation_id
-%% =============================================================================
-
 erDiagram
 
   admin_actions {
@@ -31,7 +16,7 @@ erDiagram
     string event_type
     string entity_type
     int entity_id
-    text metadata_json
+    text metadata
     timestamp logged_at
   }
 
@@ -106,7 +91,7 @@ erDiagram
   products {
     int product_id PK
     int listing_id FK
-    decimal price
+    float price
     int stock
   }
 
@@ -122,14 +107,14 @@ erDiagram
   roles {
     int role_id PK
     string name
-    text permissions_json
+    text permissions
   }
 
   service_bookings {
     int booking_id PK
     int transaction_id FK
     text requirements
-    decimal agreed_price
+    float agreed_price
     timestamp scheduled_at
   }
 
@@ -147,7 +132,7 @@ erDiagram
     int price_item_id PK
     int listing_id FK
     string item_name
-    decimal amount
+    float amount
     int sort_order
     timestamp created_at
   }
@@ -155,7 +140,7 @@ erDiagram
   services {
     int service_id PK
     int listing_id FK
-    decimal rate
+    float rate
     string rate_type
   }
 
@@ -165,7 +150,7 @@ erDiagram
     int listing_id FK
     string transaction_type
     int quantity
-    decimal total_price
+    float total_price
     string status
     timestamp created_at
     timestamp updated_at
@@ -229,13 +214,10 @@ erDiagram
     timestamp updated_at
   }
 
-  %% ----- Relationships (after entities so connectors render reliably) -----
 
   roles ||--o{ users : assigns
 
   users ||--o{ user_sessions : has_session
-
-  categories ||--o{ categories : parent_is
 
   categories ||--o{ listings : classified_as
 

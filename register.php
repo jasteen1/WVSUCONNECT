@@ -9,6 +9,7 @@
     <?php include __DIR__ . '/head_assets.php'; ?>
 </head>
 <body class="wvsu-auth-bg d-flex align-items-center justify-content-center py-5 px-3">
+<?php include __DIR__ . '/entry_loader.inc.php'; ?>
     <div class="wvsu-auth-orbs" aria-hidden="true"></div>
 
     <div class="card border-0 shadow-lg wvsu-auth-card mx-auto overflow-hidden position-relative w-100"
