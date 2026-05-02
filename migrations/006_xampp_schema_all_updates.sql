@@ -15,6 +15,9 @@
 -- from earlier migration files 001–005, so teammates can align a fresh XAMPP
 -- import with the current codebase in one place.
 --
+-- Demo logins (same password for all): run **`007_test_users_seed.sql`** after this.
+-- Sample marketplace rows: run **`008_sample_listings_seed.sql`** after users + schema.
+--
 -- Optional: set the database name here (uncomment) if your client does not
 -- pre-select the DB:
 --   USE wvsudb;
