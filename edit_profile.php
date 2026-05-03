@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db_conn.php';
+require_once __DIR__ . '/profiles_reviews.inc.php';
 
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php?next=edit_profile.php');
@@ -9,7 +10,7 @@ if (empty($_SESSION['user_id'])) {
 $userId = (int) $_SESSION['user_id'];
 $row = fetch_master(
     'SELECT user_id, full_name, profile_pic_url, bio, social_instagram, social_facebook, social_x,
-            social_tiktok, social_linkedin, social_website, updated_at
+            social_tiktok, social_linkedin, social_website, college, year_level, course, updated_at
      FROM users WHERE user_id = ? LIMIT 1',
     [(string) $userId]
 );
@@ -39,7 +40,7 @@ $preview = htmlspecialchars(
 <div class="container mt-4 pb-5 wvsu-pan-soft">
     <div class="mx-auto" style="max-width: 640px;" data-io-animate>
         <h1 class="h4 fw-bold mb-1">Edit profile</h1>
-        <p class="text-muted small mb-4">Photo, bio, and social links show on your public profile.</p>
+        <p class="text-muted small mb-4">College, year level, course, photo, bio, and social links show on your public profile.</p>
 
         <?php
         $err = isset($_GET['err']) ? (string) $_GET['err'] : '';
@@ -53,6 +54,7 @@ $preview = htmlspecialchars(
             'invalid_type' => 'Please use JPG, PNG, WebP, or GIF for your photo.',
             'save_photo' => 'Photo saved to disk but database update failed. Check profile_edit_debug.log in the project folder.',
             'save_profile' => 'Could not save profile fields. Check profile_edit_debug.log for MySQL errors.',
+            'invalid_college_year' => 'Please select a valid college and year level (1st–4th year).',
             default => '',
         };
         ?>
@@ -70,6 +72,44 @@ $preview = htmlspecialchars(
                             <input type="file" name="profile_photo" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/gif">
                             <span class="text-muted" style="font-size: .75rem;">JPG, PNG, WebP, or GIF · max sensible size (~5MB)</span>
                         </div>
+                    </div>
+
+                    <?php
+                    $wvsuMainCollegesEd = array_values(array_filter(
+                        wvsu_college_codes(),
+                        static fn (string $c): bool => $c !== 'ILS'
+                    ));
+                    $curCollege = strtoupper(trim((string) ($row['college'] ?? '')));
+                    $curYear = (int) ($row['year_level'] ?? 0);
+                    ?>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">College / unit</label>
+                            <select name="college" class="form-select" required>
+                                <option value="" disabled <?= $curCollege === '' ? 'selected' : '' ?>>Select college…</option>
+                                <?php foreach ($wvsuMainCollegesEd as $c): ?>
+                                    <option value="<?= htmlspecialchars($c, ENT_QUOTES, 'UTF-8') ?>" <?= $curCollege === $c ? 'selected' : '' ?>><?= htmlspecialchars($c, ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                                <optgroup label="Others">
+                                    <option value="ILS" <?= $curCollege === 'ILS' ? 'selected' : '' ?>>ILS (Others)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Year level</label>
+                            <select name="year_level" class="form-select" required>
+                                <option value="" disabled <?= $curYear < 1 || $curYear > 4 ? 'selected' : '' ?>>Select year…</option>
+                                <?php for ($yy = 1; $yy <= 4; $yy++): ?>
+                                    <option value="<?= $yy ?>" <?= $curYear === $yy ? 'selected' : '' ?>><?= htmlspecialchars(wvsu_year_level_display($yy), ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Course / program</label>
+                        <input type="text" name="course" class="form-control" maxlength="200" placeholder="e.g. BS Computer Science, BSED English" value="<?= htmlspecialchars((string) ($row['course'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="form-text small">Free text — how your program appears in your college records.</div>
                     </div>
 
                     <div class="mb-3">

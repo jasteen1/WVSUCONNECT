@@ -98,6 +98,14 @@ $res = $master_conn->query("ALTER TABLE conversations DROP INDEX uq_conversation
 $res2 = $master_conn->query("ALTER TABLE conversations MODIFY conversation_id INT UNSIGNED NOT NULL AUTO_INCREMENT");
 @file_put_contents(__DIR__ . '/db_conn_debug.log', "alter_conv_autoinc_result=" . ($res2 ? 'ok' : 'fail') . ",errno=" . intval($master_conn->errno) . ",err=" . $master_conn->error . "\n", FILE_APPEND);
 
+// Add-product / add-service need a real insert_id. Some imported dumps define listing_id / product_id without AUTO_INCREMENT.
+$resLai = @$master_conn->query('ALTER TABLE listings MODIFY listing_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+@file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_listings_autoinc=' . ($resLai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
+$resPai = @$master_conn->query('ALTER TABLE products MODIFY product_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+@file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_products_autoinc=' . ($resPai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
+$resSai = @$master_conn->query('ALTER TABLE services MODIFY service_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+@file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_services_autoinc=' . ($resSai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
+
 // Service portfolio media (photos / videos); safe to omit FK if migrations differ.
 @include_once __DIR__ . '/service_portfolio.inc.php';
 if (function_exists('wvsu_service_portfolio_ensure_table')) {
@@ -114,8 +122,17 @@ if (function_exists('wvsu_service_pricing_ensure_table')) {
 if (function_exists('wvsu_user_profiles_ensure_columns')) {
     wvsu_user_profiles_ensure_columns($master_conn);
 }
+if (function_exists('wvsu_user_college_year_ensure_columns')) {
+    wvsu_user_college_year_ensure_columns($master_conn);
+}
 if (function_exists('wvsu_user_reviews_ensure_table')) {
     wvsu_user_reviews_ensure_table($master_conn);
+}
+if (function_exists('wvsu_user_reviews_ensure_photo_and_indexes')) {
+    wvsu_user_reviews_ensure_photo_and_indexes($master_conn);
+}
+if (function_exists('wvsu_user_reviews_ensure_seller_reply_columns')) {
+    wvsu_user_reviews_ensure_seller_reply_columns($master_conn);
 }
 
 @include_once __DIR__ . '/messaging_schema.inc.php';

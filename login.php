@@ -6,6 +6,26 @@ require_once __DIR__ . '/wvsu_auth_redirect.inc.php';
 $nextRaw = isset($_GET['next']) ? (string) $_GET['next'] : '';
 $nextSafeFull = wvsu_login_redirect_destination($nextRaw);
 
+$loginErrorRaw = isset($_GET['error']) ? (string) $_GET['error'] : '';
+$loginErrorDisplay = '';
+if ($loginErrorRaw !== '') {
+    if ($loginErrorRaw === 'email_registered') {
+        $loginErrorDisplay = 'This campus email is already registered. Log in below, or go back to sign up with a different email.';
+    } else {
+        $loginErrorDisplay = $loginErrorRaw;
+    }
+}
+
+$prefillEmail = '';
+if (isset($_GET['email'])) {
+    $e = trim((string) $_GET['email']);
+    if (strlen($e) <= 254 && str_contains($e, '@')) {
+        $prefillEmail = $e;
+    }
+}
+
+$loginSuccess = isset($_GET['success']) ? trim((string) $_GET['success']) : '';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,10 +50,18 @@ $nextSafeFull = wvsu_login_redirect_destination($nextRaw);
                 <p class="text-muted mb-0 small fw-semibold">Student marketplace • Sign in</p>
             </div>
 
-            <?php if (isset($_GET['error'])): ?>
+            <?php if ($loginSuccess !== ''): ?>
+                <div class="alert alert-success rounded-4 alert-dismissible fade show small py-3" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <?php echo htmlspecialchars($loginSuccess); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($loginErrorDisplay !== ''): ?>
                 <div class="alert alert-danger rounded-4 alert-dismissible fade show small py-3" role="alert">
-                    <i class="bi bi-exclamation-circle me-2"></i>
-                    <?php echo htmlspecialchars((string) $_GET['error']); ?>
+                    <i class="bi bi-envelope-exclamation me-2"></i>
+                    <?php echo htmlspecialchars($loginErrorDisplay); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -44,7 +72,8 @@ $nextSafeFull = wvsu_login_redirect_destination($nextRaw);
                 <?php endif; ?>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Campus email</label>
-                    <input type="email" name="email" class="form-control rounded-pill px-3 py-2" placeholder="student.name@wvsu.edu.ph" required autocomplete="username">
+                    <input type="email" name="email" class="form-control rounded-pill px-3 py-2" placeholder="student.name@wvsu.edu.ph" required autocomplete="username"
+                           value="<?php echo htmlspecialchars($prefillEmail, ENT_QUOTES, 'UTF-8'); ?>">
                 </div>
                 <div class="mb-4">
                     <label class="form-label small fw-bold">Password</label>

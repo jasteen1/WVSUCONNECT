@@ -1,7 +1,11 @@
 <?php
 require_once 'db_conn.php';
+require_once __DIR__ . '/profiles_reviews.inc.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 $id = intval($_GET['id'] ?? 0);
-if ($id <= 0) die('Invalid product ID.');
+if ($id <= 0) {
+    die('Invalid product ID.');
+}
 
 $sql = 'SELECT l.*, p.price, p.stock, u.full_name AS owner_name, u.user_id AS owner_user_id, u.updated_at AS owner_updated_at
     FROM listings l
@@ -9,7 +13,15 @@ $sql = 'SELECT l.*, p.price, p.stock, u.full_name AS owner_name, u.user_id AS ow
     JOIN users u ON u.user_id = l.owner_id
     WHERE l.listing_id = ? LIMIT 1';
 $item = fetch_master($sql, [(string) $id]);
-if (!$item) die('Product not found.');
+if (! $item) {
+    die('Product not found.');
+}
+$wvsu_listing_review_id = (int) $item['listing_id'];
+$listRevStats = wvsu_listing_review_stats($wvsu_listing_review_id);
+
+$wvsuReturnTo = wvsu_safe_listing_return_url(isset($_GET['return']) ? (string) $_GET['return'] : '');
+$wvsuListingBackHref = $wvsuReturnTo !== '' ? $wvsuReturnTo : 'products.php';
+$wvsuListingBackUseHistory = $wvsuReturnTo === '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,9 +38,10 @@ if (!$item) die('Product not found.');
 
 <div class="container mt-5 pb-5 wvsu-pan-soft">
     <div class="d-flex align-items-center mb-4 pb-3">
-    <a href="products.php" class="text-dark text-decoration-none me-3" title="Back to Products">
-        <i class="bi bi-arrow-left fs-2 arrow-hover"></i>   
-    </a>
+    <a href="<?= htmlspecialchars($wvsuListingBackHref, ENT_QUOTES, 'UTF-8') ?>"
+       class="text-dark text-decoration-none me-3 arrow-hover"
+       title="Back"
+       <?= $wvsuListingBackUseHistory ? 'data-wvsu-smart-back="1"' : '' ?>><i class="bi bi-arrow-left fs-2"></i></a>
     
     <div>
         <h4 class="mb-0 fw-bold">Product details</h4>
@@ -56,7 +69,6 @@ if (!$item) die('Product not found.');
             <p class="small text-muted">Stock: <?= intval($item['stock']) ?></p>
 
             <?php
-            require_once __DIR__ . '/profiles_reviews.inc.php';
             $oid = (int) ($item['owner_user_id'] ?? $item['owner_id'] ?? 0);
             $ownStats = $oid > 0 ? wvsu_review_average_for_user($oid) : ['avg' => 0.0, 'count' => 0];
             $oav = $oid > 0
@@ -71,9 +83,17 @@ if (!$item) die('Product not found.');
                         <div class="fw-semibold"><?= htmlspecialchars((string) ($item['owner_name'] ?? 'Seller')) ?></div>
                         <div class="small text-muted">
                             <?php if ($ownStats['count'] > 0): ?>
-                                <?= htmlspecialchars(number_format($ownStats['avg'], 1)) ?>★ · <?= (int) $ownStats['count'] ?> review<?= $ownStats['count'] === 1 ? '' : 's' ?>
+                                <?= htmlspecialchars(number_format($ownStats['avg'], 1)) ?>★ · <?= (int) $ownStats['count'] ?> profile review<?= $ownStats['count'] === 1 ? '' : 's' ?>
                             <?php else: ?>
                                 New on WVSU CONNECT
+                            <?php endif; ?>
+                            <?php if ($listRevStats['count'] > 0): ?>
+                                <span class="d-block mt-1 text-primary fw-semibold">
+                                    This product: <?= htmlspecialchars(number_format($listRevStats['avg'], 1)) ?>★ · <?= (int) $listRevStats['count'] ?> review<?= $listRevStats['count'] === 1 ? '' : 's' ?>
+                                </span>
+                                <a href="#wvsu-listing-reviews" class="d-inline-block mt-1 small fw-semibold">Read buyer reviews below ↓</a>
+                            <?php else: ?>
+                                <span class="d-block mt-1 small text-muted">No buyer reviews yet — first purchase feedback will show below.</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -128,6 +148,8 @@ if (!$item) die('Product not found.');
             <?php endif; ?>
         </div>
     </div>
+
+    <?php include __DIR__ . '/listing_reviews_block.inc.php'; ?>
 </div>
 <?php include __DIR__ . '/footer.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

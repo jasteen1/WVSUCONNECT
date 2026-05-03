@@ -1,6 +1,8 @@
 <?php
 require_once 'db_conn.php';
 require_once __DIR__ . '/service_pricing.inc.php';
+require_once __DIR__ . '/profiles_reviews.inc.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) {
     die('Invalid listing.');
@@ -12,19 +14,28 @@ $sql = 'SELECT l.*, s.rate, s.rate_type, u.full_name AS owner_name, u.user_id AS
     JOIN users u ON u.user_id = l.owner_id
     WHERE l.listing_id = ? AND l.listing_type = \'service\' LIMIT 1';
 $item = fetch_master($sql, [(string) $id]);
-if (!$item) {
+if (! $item) {
     die('Service not found.');
 }
+$wvsu_listing_review_id = (int) $item['listing_id'];
+$listRevStats = wvsu_listing_review_stats($wvsu_listing_review_id);
 
-$portfolio = fetchAll(
+$wvsuReturnTo = wvsu_safe_listing_return_url(isset($_GET['return']) ? (string) $_GET['return'] : '');
+$wvsuListingBackHref = $wvsuReturnTo !== '' ? $wvsuReturnTo : 'services.php';
+$wvsuListingBackUseHistory = $wvsuReturnTo === '';
+
+$portfolio = fetchAll_master(
     'SELECT portfolio_id, media_type, file_path, grid_span FROM service_portfolio_items
      WHERE listing_id = ? ORDER BY sort_order ASC, portfolio_id ASC',
-    [$id]
+    [(string) $id]
 );
-$priceItems = fetchAll(
+$priceItems = fetchAll_master(
     'SELECT item_name, amount FROM service_pricing_items WHERE listing_id = ? ORDER BY sort_order ASC, price_item_id ASC',
-    [$id]
+    [(string) $id]
 );
+
+$svcViewerUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
+$svcIsOwnerLoggedIn = $svcViewerUserId > 0 && (int) ($item['owner_id'] ?? 0) === $svcViewerUserId;
 
 function wvsu_rate_label(string $rateType): string
 {
@@ -83,7 +94,10 @@ function wvsu_rate_label(string $rateType): string
 
 <div class="container mt-4 pb-5 wvsu-pan-soft">
     <div class="d-flex align-items-center mb-4">
-        <a href="services.php" class="text-dark text-decoration-none me-3" title="Back"><i class="bi bi-arrow-left fs-2"></i></a>
+        <a href="<?= htmlspecialchars($wvsuListingBackHref, ENT_QUOTES, 'UTF-8') ?>"
+           class="text-dark text-decoration-none me-3"
+           title="Back"
+           <?= $wvsuListingBackUseHistory ? 'data-wvsu-smart-back="1"' : '' ?>><i class="bi bi-arrow-left fs-2"></i></a>
         <div>
             <h4 class="mb-0 fw-bold">Service</h4>
             <span class="text-muted small">Portfolio &amp; details</span>
@@ -94,13 +108,13 @@ function wvsu_rate_label(string $rateType): string
         <div class="col-lg-5">
             <?php if (!empty($item['image_url'])): ?>
                 <?php
-                $cov = (string) $item['image_url'];
+                $cov = wvsu_listing_media_href((string) $item['image_url']);
                 $vidCov = preg_match('/\.(mp4|webm|mov)$/i', $cov);
                 ?>
                 <?php if ($vidCov): ?>
-                    <video class="w-100 rounded-4 shadow" controls playsinline src="<?= htmlspecialchars($cov) ?>"></video>
+                    <video class="w-100 rounded-4 shadow" controls playsinline src="<?= htmlspecialchars($cov, ENT_QUOTES, 'UTF-8') ?>"></video>
                 <?php else: ?>
-                    <img src="<?= htmlspecialchars($cov) ?>" class="w-100 rounded-4 shadow object-fit-cover" style="max-height:380px;object-fit:cover;" alt="">
+                    <img src="<?= htmlspecialchars($cov, ENT_QUOTES, 'UTF-8') ?>" class="w-100 rounded-4 shadow object-fit-cover" style="max-height:380px;object-fit:cover;" alt="">
                 <?php endif; ?>
             <?php else: ?>
                 <div class="ratio ratio-4x3 bg-light rounded-4 d-flex align-items-center justify-content-center text-muted">
@@ -145,7 +159,6 @@ function wvsu_rate_label(string $rateType): string
             <?php endif; ?>
 
             <?php
-            require_once __DIR__ . '/profiles_reviews.inc.php';
             $fid = (int) ($item['owner_user_id'] ?? $item['owner_id'] ?? 0);
             $fstats = $fid > 0 ? wvsu_review_average_for_user($fid) : ['avg' => 0.0, 'count' => 0];
             $fav = $fid > 0
@@ -160,9 +173,17 @@ function wvsu_rate_label(string $rateType): string
                         <div class="fw-semibold"><?= htmlspecialchars((string) ($item['owner_name'] ?? 'Freelancer')) ?></div>
                         <div class="small text-muted">
                             <?php if ($fstats['count'] > 0): ?>
-                                <?= htmlspecialchars(number_format($fstats['avg'], 1)) ?>★ · <?= (int) $fstats['count'] ?> review<?= $fstats['count'] === 1 ? '' : 's' ?>
+                                <?= htmlspecialchars(number_format($fstats['avg'], 1)) ?>★ · <?= (int) $fstats['count'] ?> profile review<?= $fstats['count'] === 1 ? '' : 's' ?>
                             <?php else: ?>
                                 New on WVSU CONNECT
+                            <?php endif; ?>
+                            <?php if ($listRevStats['count'] > 0): ?>
+                                <span class="d-block mt-1 text-primary fw-semibold">
+                                    This service: <?= htmlspecialchars(number_format($listRevStats['avg'], 1)) ?>★ · <?= (int) $listRevStats['count'] ?> review<?= $listRevStats['count'] === 1 ? '' : 's' ?>
+                                </span>
+                                <a href="#wvsu-listing-reviews" class="d-inline-block mt-1 small fw-semibold">Read buyer reviews below ↓</a>
+                            <?php else: ?>
+                                <span class="d-block mt-1 small text-muted">No buyer reviews yet — feedback appears below after completed sales.</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -173,11 +194,13 @@ function wvsu_rate_label(string $rateType): string
             </div>
 
             <div class="d-flex flex-wrap gap-2">
-                <a href="contact.php?listing_id=<?= intval($item['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">
-                    <i class="bi bi-chat-dots me-1"></i> Message provider
-                </a>
-                <?php if (intval($item['owner_id']) === (int) ($_SESSION['user_id'] ?? 0)): ?>
-                    <a href="edit_listing.php?id=<?= intval($item['listing_id']) ?>" class="btn btn-outline-secondary rounded-pill fw-semibold">Edit listing</a>
+                <?php if (! $svcIsOwnerLoggedIn): ?>
+                    <a href="contact.php?listing_id=<?= intval($item['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-chat-dots me-1"></i> Message freelancer
+                    </a>
+                <?php endif; ?>
+                <?php if ($svcIsOwnerLoggedIn): ?>
+                    <a href="edit_listing.php?id=<?= intval($item['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">Edit listing</a>
                 <?php elseif (!empty($_SESSION['user_id'])): ?>
                     <button class="btn btn-outline-danger rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#reportServiceUser">
                         <i class="bi bi-flag me-1"></i>Report freelancer
@@ -213,22 +236,24 @@ function wvsu_rate_label(string $rateType): string
         </div>
     </div>
 
+    <?php include __DIR__ . '/listing_reviews_block.inc.php'; ?>
+
     <?php if (!empty($portfolio)): ?>
         <hr class="my-5 opacity-25">
         <h3 class="h5 fw-bold mb-3"><i class="bi bi-images me-2 text-primary"></i>Portfolio</h3>
         <div class="svc-portfolio-grid">
             <?php foreach ($portfolio as $pf):
-                $path = (string) $pf['file_path'];
+                $path = wvsu_listing_media_href((string) $pf['file_path']);
                 $span = max(1, min(2, (int) ($pf['grid_span'] ?? 1)));
                 $tileClass = 'svc-tile shadow-sm' . ($span === 2 ? ' span-2' : '');
                 ?>
                 <?php if ($pf['media_type'] === 'video'): ?>
                     <div class="<?= $tileClass ?>">
-                        <video src="<?= htmlspecialchars($path) ?>" controls playsinline preload="metadata"></video>
+                        <video src="<?= htmlspecialchars($path, ENT_QUOTES, 'UTF-8') ?>" controls playsinline preload="metadata"></video>
                     </div>
                 <?php else: ?>
                     <div class="<?= $tileClass ?>">
-                        <img src="<?= htmlspecialchars($path) ?>" alt="" loading="lazy">
+                        <img src="<?= htmlspecialchars($path, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>

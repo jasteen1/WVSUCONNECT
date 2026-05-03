@@ -6,7 +6,7 @@ $listing_id = intval($_POST['listing_id'] ?? 0);
 if ($listing_id <= 0) { header('Location: your_listings.php'); exit; }
 
 // verify ownership
-$owner = fetch("SELECT owner_id, listing_type FROM listings WHERE listing_id = ?", [$listing_id]);
+$owner = fetch_master('SELECT owner_id, listing_type FROM listings WHERE listing_id = ?', [(string) $listing_id]);
 if (!$owner || intval($owner['owner_id']) !== $uid) { header('HTTP/1.1 403 Forbidden'); echo 'Forbidden'; exit; }
 
 // soft-delete: mark inactive

@@ -66,3 +66,31 @@ function wvsu_ensure_writable_messages_upload_dir(?string $logPath = null): ?str
 
     return $msg;
 }
+
+/** Writable uploads/review-photos for post-sale feedback on seller profiles */
+function wvsu_ensure_writable_review_upload_dir(?string $logPath = null): ?string
+{
+    $root = __DIR__ . DIRECTORY_SEPARATOR . 'uploads';
+    $rev = $root . DIRECTORY_SEPARATOR . 'reviews';
+
+    foreach ([$root, $rev] as $dir) {
+        if (! is_dir($dir)) {
+            if (! @mkdir($dir, 0777, true)) {
+                if ($logPath) {
+                    @file_put_contents($logPath, date('c') . " mkdir_failed {$dir}\n", FILE_APPEND);
+                }
+                return null;
+            }
+        }
+        @chmod($dir, 0777);
+        clearstatcache(true, $dir);
+        if (! is_writable($dir)) {
+            if ($logPath) {
+                @file_put_contents($logPath, date('c') . " not_writable {$dir}\n", FILE_APPEND);
+            }
+            return null;
+        }
+    }
+
+    return $rev;
+}

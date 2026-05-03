@@ -1,5 +1,6 @@
 <?php
 require_once 'db_conn.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 $q = trim((string) ($_GET['q'] ?? ''));
 $categoryFilter = intval($_GET['category'] ?? 0);
 
@@ -27,7 +28,7 @@ if ($categoryFilter > 0) {
     $params[] = (string) $categoryFilter;
 }
 $productsSql .= " ORDER BY l.created_at DESC";
-$products = fetchAll($productsSql, $params);
+$products = fetchAll_master($productsSql, $params);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -105,7 +106,7 @@ $products = fetchAll($productsSql, $params);
                                 <small class="text-muted"><i class="bi bi-clock"></i> <?= date('M j', strtotime($p['created_at'])) ?></small>
                             </div>
                                 <?php if (!$isSoldOut): ?>
-                                    <a href="view-product.php?id=<?= intval($p['listing_id']) ?>" class="stretched-link"></a>
+                                    <a href="<?= htmlspecialchars(wvsu_append_listing_return('view-product.php?id=' . intval($p['listing_id']), 'products.php'), ENT_QUOTES, 'UTF-8') ?>" class="stretched-link"></a>
                                 <?php else: ?>
                                     <!-- Sold-out item: no link (non-clickable) -->
                                 <?php endif; ?>

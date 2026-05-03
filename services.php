@@ -1,5 +1,6 @@
 <?php
 require_once 'db_conn.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 $q = trim((string) ($_GET['q'] ?? ''));
 $categoryFilter = intval($_GET['category'] ?? 0);
 
@@ -27,7 +28,7 @@ if ($categoryFilter > 0) {
     $params[] = (string) $categoryFilter;
 }
 $servicesSql .= " ORDER BY l.created_at DESC";
-$services = fetchAll($servicesSql, $params);
+$services = fetchAll_master($servicesSql, $params);
 function wvsu_services_rate_text($rate, $rateType): string {
     $rt = (string) $rateType;
     if ($rt === 'negotiable') {
@@ -98,7 +99,7 @@ function wvsu_services_rate_text($rate, $rateType): string {
                                 $isVidThumb = $iu !== '' && preg_match('/\.(mp4|webm|mov)$/i', $iu);
                                 ?>
                                 <?php if ($iu !== '' && !$isVidThumb): ?>
-                                    <img src="<?= htmlspecialchars($iu) ?>" class="rounded-circle object-fit-cover" width="45" height="45" alt="">
+                                    <img src="<?= htmlspecialchars(wvsu_listing_media_href($iu), ENT_QUOTES, 'UTF-8') ?>" class="rounded-circle object-fit-cover" width="45" height="45" alt="">
                                 <?php elseif ($isVidThumb): ?>
                                     <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:45px;height:45px"><i class="bi bi-camera-video-fill"></i></div>
                                 <?php else: ?>
@@ -115,7 +116,7 @@ function wvsu_services_rate_text($rate, $rateType): string {
                                     <span class="text-dark small d-block mb-0">Starting at</span>
                                     <span class="h5 fw-bold text-primary mb-0"><?= htmlspecialchars(wvsu_services_rate_text($s['rate'], $s['rate_type'])) ?></span>
                                 </div>
-                                <a href="view-service.php?id=<?= intval($s['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">View Gig</a>
+                                <a href="<?= htmlspecialchars(wvsu_append_listing_return('view-service.php?id=' . intval($s['listing_id']), 'services.php'), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">View Gig</a>
                             </div>
                         </div>
                     </div>

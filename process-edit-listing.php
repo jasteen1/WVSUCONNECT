@@ -6,7 +6,7 @@ $uid = intval($_SESSION['user_id']);
 $listing_id = intval($_POST['listing_id'] ?? 0);
 if ($listing_id <= 0) { header('Location: your_listings.php'); exit; }
 
-$owner = fetch("SELECT owner_id, listing_type FROM listings WHERE listing_id = ?", [$listing_id]);
+$owner = fetch_master('SELECT owner_id, listing_type FROM listings WHERE listing_id = ?', [(string) $listing_id]);
 if (!$owner || intval($owner['owner_id']) !== $uid) { header('HTTP/1.1 403 Forbidden'); echo 'Forbidden'; exit; }
 
 // gather inputs
@@ -138,7 +138,7 @@ if ($owner['listing_type'] === 'service') {
         return max(1, min(2, (int) $v));
     }, $newSpanArr));
 
-    $maxRow = fetch('SELECT COALESCE(MAX(sort_order), -1) AS m FROM service_portfolio_items WHERE listing_id = ?', [$listing_id]);
+    $maxRow = fetch_master('SELECT COALESCE(MAX(sort_order), -1) AS m FROM service_portfolio_items WHERE listing_id = ?', [(string) $listing_id]);
     $nextSort = intval($maxRow['m'] ?? -1) + 1;
 
     if (

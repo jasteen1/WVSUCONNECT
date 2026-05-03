@@ -5,6 +5,7 @@ require_once __DIR__ . '/db_conn.php';
 require_once __DIR__ . '/profiles_reviews.inc.php';
 require_once __DIR__ . '/messaging_schema.inc.php';
 require_once __DIR__ . '/wvsu_upload_dirs.inc.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php?next=' . rawurlencode('messages.php'));
@@ -12,6 +13,7 @@ if (empty($_SESSION['user_id'])) {
 }
 
 wvsu_messaging_ensure_schema($master_conn);
+wvsu_conversation_meta_ensure_sale_feedback_columns($master_conn);
 
 $me = (int) $_SESSION['user_id'];
 
@@ -88,6 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['conv_id'])) {
     /* Re-open a conversation closed after completing a sale (either side may resume messaging). */
     if ($conv_id > 0 && $participantCheck($conv_id)
         && isset($_POST['wvsu_reopen_conversation']) && (string) $_POST['wvsu_reopen_conversation'] === '1') {
+        $pendReopen = fetch_master(
+            'SELECT pending_sale_buyer_id FROM conversation_meta WHERE conversation_id = ? LIMIT 1',
+            [(string) $conv_id]
+        );
+        if ($pendReopen && (int) ($pendReopen['pending_sale_buyer_id'] ?? 0) > 0) {
+            header('Location: messages.php?conv=' . $conv_id . '&error=sale_feedback_reopen_blocked');
+            exit;
+        }
         if ($convIsClosed($master_conn, $conv_id) === 1) {
             insert('UPDATE conversation_meta SET is_closed = 0 WHERE conversation_id = ?', [(string) $conv_id]);
             $me_name = '';
@@ -116,8 +126,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['conv_id'])) {
         && (int) $_FILES['attachment']['error'] === UPLOAD_ERR_OK;
 
     if ($conv_id > 0 && $participantCheck($conv_id)) {
+        $pendSend = fetch_master(
+            'SELECT pending_sale_buyer_id FROM conversation_meta WHERE conversation_id = ? LIMIT 1',
+            [(string) $conv_id]
+        );
+        if ($pendSend && (int) ($pendSend['pending_sale_buyer_id'] ?? 0) > 0) {
+            header('Location: messages.php?conv=' . $conv_id . '&error=sale_feedback_block');
+            exit;
+        }
         if ($convIsClosed($master_conn, $conv_id) === 1) {
             $ensureConvOpenForMessaging($conv_id);
+        }
+
+        $attachmentErrCode = isset($_FILES['attachment']['error'])
+            ? (int) $_FILES['attachment']['error']
+            : UPLOAD_ERR_NO_FILE;
+        if (
+            $attachmentErrCode !== UPLOAD_ERR_NO_FILE
+            && $attachmentErrCode !== UPLOAD_ERR_OK
+        ) {
+            $photoErrRedir = match ($attachmentErrCode) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'image_too_large',
+                UPLOAD_ERR_PARTIAL => 'upload_failed',
+                UPLOAD_ERR_NO_TMP_DIR => 'upload_dir',
+                default => 'upload_failed',
+            };
+            header('Location: messages.php?conv=' . $conv_id . '&error=' . rawurlencode($photoErrRedir));
+            exit;
         }
 
         $msgType = 'text';
@@ -137,12 +172,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['conv_id'])) {
                 header('Location: messages.php?conv=' . $conv_id . '&error=upload_failed');
                 exit;
             }
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo->file($tmp) ?: '';
+            $mime = '';
+            if (class_exists('finfo')) {
+                try {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = (string) ($finfo->file($tmp) ?: '');
+                } catch (Throwable $e) {
+                    $mime = '';
+                }
+            }
+            if ($mime === '' || $mime === 'application/octet-stream') {
+                $gi = @getimagesize($tmp);
+                if (is_array($gi) && ! empty($gi['mime'])) {
+                    $mime = (string) $gi['mime'];
+                }
+            }
             $allowedMime = [
                 'image/jpeg', 'image/png', 'image/webp', 'image/gif',
             ];
-            if (! in_array($mime, $allowedMime, true)) {
+            if ($mime !== '' && ! in_array($mime, $allowedMime, true)) {
+                header('Location: messages.php?conv=' . $conv_id . '&error=bad_image_type');
+                exit;
+            }
+            if ($mime === '') {
                 header('Location: messages.php?conv=' . $conv_id . '&error=bad_image_type');
                 exit;
             }
@@ -239,6 +291,9 @@ $other_name = '';
 $other_user_id = 0;
 $other_updated = '';
 $is_closed = 0;
+$saleFeedbackPending = false;
+$pendingBuyerId = 0;
+$pendingListingId = 0;
 
 if ($selected_conv > 0) {
     if (! $participantCheck($selected_conv)) {
@@ -272,10 +327,16 @@ if ($selected_conv > 0) {
         }
     }
 
-    if ($convIsClosed($master_conn, $selected_conv) === 1) {
-        $ensureConvOpenForMessaging($selected_conv);
-    }
-    $is_closed = $convIsClosed($master_conn, $selected_conv);
+    $convMetaRow = fetch_master(
+        'SELECT is_closed, pending_sale_buyer_id, pending_sale_listing_id FROM conversation_meta WHERE conversation_id = ? LIMIT 1',
+        [(string) $selected_conv]
+    );
+    $is_closed = $convMetaRow && (int) ($convMetaRow['is_closed'] ?? 0) === 1 ? 1 : 0;
+    $saleFeedbackPending = (bool) ($convMetaRow && (int) ($convMetaRow['pending_sale_buyer_id'] ?? 0) > 0);
+    $pendingBuyerId = $saleFeedbackPending ? (int) $convMetaRow['pending_sale_buyer_id'] : 0;
+    $pendingListingId = ($convMetaRow && (int) ($convMetaRow['pending_sale_listing_id'] ?? 0) > 0)
+        ? (int) $convMetaRow['pending_sale_listing_id']
+        : 0;
 
     insert(
         'UPDATE messages SET is_read = 1 WHERE conversation_id = ? AND sender_id != ? AND is_read = 0',
@@ -307,7 +368,10 @@ if ($selected_conv > 0) {
             'image_url' => trim((string) ($map['image_url'] ?? '')),
             'listing_type' => $lt === 'service' ? 'service' : 'product',
             'owner_id' => (int) ($map['owner_id'] ?? 0),
-            'href' => ($lt === 'service' ? 'view-service.php?id=' : 'view-product.php?id=') . $lid,
+            'href' => wvsu_append_listing_return(
+                ($lt === 'service' ? 'view-service.php?id=' : 'view-product.php?id=') . $lid,
+                $selected_conv > 0 ? 'messages.php?conv=' . $selected_conv : 'messages.php'
+            ),
         ];
         $headerListingTitle = $listingContext['title'];
     }
@@ -374,10 +438,12 @@ if ($selected_conv > 0 && $other_user_id > 0) {
 
 $flashNotice = match ((string) ($_GET['notice'] ?? '')) {
     'conversation_reopened' => 'Chat reopened — you can send messages again.',
+    'sale_feedback_saved' => 'Thanks — your feedback and photo were posted. When you’re ready to talk about another purchase, tap Message again — Complete sale stays hidden for the seller until then.',
+    'reviews_in_messages' => 'Purchase reviews are submitted here in the chat after the seller marks the sale complete — not on the seller’s profile page.',
     default => '',
 };
 if ($flashNotice === '' && (string) ($_GET['success'] ?? '') === 'transaction_completed') {
-    $flashNotice = 'Sale marked complete — stock was updated for your listing.';
+    $flashNotice = 'Sale marked complete — stock was updated. The buyer must leave a star rating, a short comment, and a photo before this chat fully reopens.';
 }
 
 $flashErr = match ((string) ($_GET['error'] ?? '')) {
@@ -395,6 +461,18 @@ $flashErr = match ((string) ($_GET['error'] ?? '')) {
     'complete_tx_seller_only' => 'Only the listing owner can mark the sale.',
     'complete_tx_stock' => 'Not enough stock left for that quantity.',
     'complete_tx_failed' => 'Database error while completing — try again.',
+    'sale_feedback_block' => 'Please finish your sale feedback (rating, comment, and photo) first.',
+    'sale_feedback_reopen_blocked' => 'The buyer still needs to submit sale feedback — the chat will reopen automatically after they do.',
+    'sale_feedback_invalid' => 'That feedback link is no longer valid.',
+    'sale_feedback_not_pending' => 'There is no pending sale feedback for you in this chat.',
+    'sale_feedback_photo_required' => 'Please upload a photo with your feedback.',
+    'sale_feedback_comment_required' => 'Please write a short comment with your feedback.',
+    'sale_feedback_bad_image' => 'Use JPG, PNG, WebP, or GIF for your feedback photo.',
+    'sale_feedback_image_large' => 'Feedback photo is too large (max 6MB).',
+    'sale_feedback_upload' => 'Could not upload your photo — try again.',
+    'sale_feedback_upload_dir' => 'Upload folder is not writable — contact admin.',
+    'sale_feedback_db' => 'Could not save feedback — try again.',
+    'sale_feedback_duplicate' => 'Feedback for this seller is already on file (for example from an earlier purchase). If you just submitted, refresh the page.',
     default => '',
 };
 
@@ -736,7 +814,40 @@ $flashErr = match ((string) ($_GET['error'] ?? '')) {
                 </div>
 
                 <div id="composer" class="wvsu-messenger-compose border-top bg-white py-2 py-md-3 wvsu-messenger-edge-pad">
-                    <?php if (! empty($is_closed)): ?>
+                    <?php if ($saleFeedbackPending && $me === $pendingBuyerId): ?>
+                        <div class="rounded-4 border border-primary-subtle bg-primary-subtle bg-opacity-10 py-4 px-3">
+                            <h3 class="h6 fw-bold text-primary mb-2"><i class="bi bi-star-half me-2" aria-hidden="true"></i>Rate <?= htmlspecialchars((string) $other_name, ENT_QUOTES, 'UTF-8') ?></h3>
+                            <p class="small text-muted mb-3">The seller marked this sale complete. Your feedback and a photo will appear on <a href="profile.php?id=<?= (int) $other_user_id ?>">their profile</a> before you can message about another purchase.</p>
+                            <form method="post" action="process-sale-feedback.php" enctype="multipart/form-data" class="vstack gap-3">
+                                <input type="hidden" name="conv_id" value="<?= (int) $selected_conv ?>">
+                                <div>
+                                    <label class="form-label small fw-semibold">Star rating</label>
+                                    <select name="rating" class="form-select form-select-sm rounded-pill" style="max-width:12rem;" required>
+                                        <option value="" disabled selected>Choose…</option>
+                                        <?php for ($ri = 5; $ri >= 1; $ri--): ?>
+                                            <option value="<?= $ri ?>"><?= $ri ?> star<?= $ri === 1 ? '' : 's' ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label small fw-semibold">Written feedback</label>
+                                    <textarea name="comment" class="form-control rounded-3" rows="3" maxlength="2000" placeholder="How did the meet-up or item go?" required></textarea>
+                                </div>
+                                <div>
+                                    <label class="form-label small fw-semibold">Photo <span class="text-danger">(required)</span></label>
+                                    <input type="file" name="review_photo" class="form-control form-control-sm rounded-3" accept="image/jpeg,image/png,image/webp,image/gif" required>
+                                    <div class="form-text">JPG, PNG, WebP, or GIF · max 6MB — appears on the seller’s profile and on this product’s page. Reviews can’t be edited after you submit.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary rounded-pill fw-semibold align-self-start px-4">
+                                    <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Submit feedback
+                                </button>
+                            </form>
+                        </div>
+                    <?php elseif ($saleFeedbackPending): ?>
+                        <div class="rounded-4 bg-light border border-secondary-subtle py-4 px-3 text-center">
+                            <p class="text-muted small mb-0">Waiting for the buyer to leave a star rating, comment, and photo on your profile. <strong>Complete sale</strong> stays hidden until then so you can use it again for the next purchase.</p>
+                        </div>
+                    <?php elseif (! empty($is_closed)): ?>
                         <div class="rounded-4 bg-light border border-secondary-subtle py-4 px-3 text-center">
                             <p class="text-muted small mb-3 mb-md-4">This chat was closed after the sale wrapped up — you can still reach each other.</p>
                             <form method="post" action="messages.php?conv=<?= $selected_conv ?>" class="d-inline-block">
@@ -755,9 +866,9 @@ $flashErr = match ((string) ($_GET['error'] ?? '')) {
                             </div>
                             <div class="wvsu-messenger-compose__bar rounded-4 border border-secondary-subtle bg-white shadow-sm px-2 py-2 px-md-3">
                                 <a href="profile.php?id=<?= $me ?>" class="flex-shrink-0 d-none d-sm-block rounded-circle overflow-hidden align-self-center wvsu-messenger-compose__me" title="Your profile"><img src="<?= $myAvatar ?>" alt="" width="40" height="40" class="rounded-circle object-fit-cover"></a>
-                                <label class="btn btn-light border-secondary-subtle rounded-circle mb-0 flex-shrink-0 wvsu-messenger-compose__attach d-flex align-items-center justify-content-center" title="Attach image" aria-label="Attach image">
+                                <input type="file" name="attachment" accept="image/jpeg,image/png,image/webp,image/gif" class="visually-hidden" id="wvsuAttachInput" autocomplete="off">
+                                <label for="wvsuAttachInput" class="btn btn-light border-secondary-subtle rounded-circle mb-0 flex-shrink-0 wvsu-messenger-compose__attach d-flex align-items-center justify-content-center" title="Attach image" aria-label="Attach image">
                                     <i class="bi bi-image-fill text-secondary"></i>
-                                    <input type="file" name="attachment" accept="image/jpeg,image/png,image/webp,image/gif" class="d-none" id="wvsuAttachInput">
                                 </label>
                                 <textarea name="content" class="form-control border-0 bg-transparent rounded-4 flex-grow-1 shadow-none wvsu-messenger-compose__input" rows="2" placeholder="Message <?= htmlspecialchars((string) $other_name, ENT_QUOTES, 'UTF-8') ?>…"></textarea>
                                 <button type="submit" class="btn btn-primary rounded-pill px-md-4 fw-semibold flex-shrink-0 wvsu-messenger-send">
@@ -770,7 +881,10 @@ $flashErr = match ((string) ($_GET['error'] ?? '')) {
                 </div>
 
                 <?php
-                $sellerCompleteMap = fetch_master(
+                if (! empty($is_closed) || $saleFeedbackPending) {
+                    $sellerCompleteMap = null;
+                } else {
+                    $sellerCompleteMap = fetch_master(
                     'SELECT cl.listing_id FROM conversation_listings cl
                          INNER JOIN listings l ON l.listing_id = cl.listing_id
                          INNER JOIN products p ON p.listing_id = l.listing_id
@@ -778,8 +892,9 @@ $flashErr = match ((string) ($_GET['error'] ?? '')) {
                        AND LOWER(TRIM(IFNULL(l.listing_type, \'product\'))) = \'product\' AND p.stock > 0
                      ORDER BY cl.id DESC
                      LIMIT 1',
-                    [(string) $selected_conv, (string) $me]
-                );
+                        [(string) $selected_conv, (string) $me]
+                    );
+                }
                 if ($sellerCompleteMap !== null) {
                     $sellerListingRow = fetch_master(
                         'SELECT l.listing_id, l.owner_id, l.title, p.stock, p.price

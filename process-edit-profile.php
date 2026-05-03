@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/db_conn.php';
+require_once __DIR__ . '/profiles_reviews.inc.php';
 require_once __DIR__ . '/wvsu_upload_dirs.inc.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -24,6 +25,14 @@ $socialX = (string) (wvsu_sanitize_profile_url($_POST['social_x'] ?? null) ?? ''
 $socialTiktok = (string) (wvsu_sanitize_profile_url($_POST['social_tiktok'] ?? null) ?? '');
 $socialLinkedin = (string) (wvsu_sanitize_profile_url($_POST['social_linkedin'] ?? null) ?? '');
 $socialWebsite = (string) (wvsu_sanitize_profile_url($_POST['social_website'] ?? null) ?? '');
+
+$college = wvsu_sanitize_college_code($_POST['college'] ?? '');
+$yearLevel = wvsu_sanitize_year_level($_POST['year_level'] ?? null);
+$course = wvsu_sanitize_course_text($_POST['course'] ?? '');
+if ($college === null || $yearLevel === null) {
+    header('Location: edit_profile.php?err=invalid_college_year');
+    exit;
+}
 
 $logPath = __DIR__ . '/profile_edit_debug.log';
 
@@ -105,6 +114,7 @@ if ($newPic !== null) {
 $sql = 'UPDATE users SET bio = ?,
     social_instagram = NULLIF(?, \'\'), social_facebook = NULLIF(?, \'\'), social_x = NULLIF(?, \'\'),
     social_tiktok = NULLIF(?, \'\'), social_linkedin = NULLIF(?, \'\'), social_website = NULLIF(?, \'\'),
+    college = ?, year_level = ?, course = NULLIF(?, \'\'),
     updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
 
 $stmt = $master_conn->prepare($sql);
@@ -113,8 +123,9 @@ if (! $stmt) {
     header('Location: edit_profile.php?err=save_profile');
     exit;
 }
+$yearStr = (string) $yearLevel;
 $stmt->bind_param(
-    str_repeat('s', 7) . 'i',
+    str_repeat('s', 10) . 'i',
     $bio,
     $socialInstagram,
     $socialFacebook,
@@ -122,6 +133,9 @@ $stmt->bind_param(
     $socialTiktok,
     $socialLinkedin,
     $socialWebsite,
+    $college,
+    $yearStr,
+    $course,
     $userId
 );
 if (! $stmt->execute()) {

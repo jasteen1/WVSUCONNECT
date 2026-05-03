@@ -17,6 +17,24 @@ function wvsu_messaging_ensure_schema(mysqli $master): void
     }
 }
 
+/** After seller “Complete sale”, buyer must leave profile feedback + photo before chat reopens. */
+function wvsu_conversation_meta_ensure_sale_feedback_columns(mysqli $master): void
+{
+    if (! function_exists('wvsu_mysql_column_exists')) {
+        return;
+    }
+    if (! wvsu_mysql_column_exists($master, 'conversation_meta', 'pending_sale_buyer_id')) {
+        $master->query(
+            'ALTER TABLE conversation_meta ADD COLUMN pending_sale_buyer_id INT UNSIGNED NULL DEFAULT NULL AFTER is_closed'
+        );
+    }
+    if (! wvsu_mysql_column_exists($master, 'conversation_meta', 'pending_sale_listing_id')) {
+        $master->query(
+            'ALTER TABLE conversation_meta ADD COLUMN pending_sale_listing_id INT UNSIGNED NULL DEFAULT NULL AFTER pending_sale_buyer_id'
+        );
+    }
+}
+
 /**
  * Navbar / home deep links: unread count (master read, no replica lag) + inbox href that routes through latest-unread shortcut when applicable.
  *

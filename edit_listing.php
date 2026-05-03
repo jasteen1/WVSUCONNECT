@@ -6,30 +6,19 @@ $uid = intval($_SESSION['user_id']);
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) { header('Location: your_listings.php'); exit; }
 
-// Fetch listing strictly from slave (port 3307).
-$slave_only = @new mysqli(
-    $config['host'],
-    $config['user'],
-    $config['password'],
-    $config['database'],
-    $config['slave_port']
+// Ownership and editor must hit master so replica lag never shows “Forbidden” after a fresh create/sync.
+$row = fetch_master(
+    'SELECT l.*, p.price, p.stock, s.rate, s.rate_type FROM listings l
+     LEFT JOIN products p ON p.listing_id = l.listing_id
+     LEFT JOIN services s ON s.listing_id = l.listing_id
+     WHERE l.listing_id = ? LIMIT 1',
+    [(string) $id]
 );
-if ($slave_only->connect_error) {
-    header('HTTP/1.1 503 Service Unavailable');
-    echo 'Read replica unavailable. Try again later.';
+
+if (!$row || intval($row['owner_id'] ?? 0) !== $uid) {
+    header('HTTP/1.1 403 Forbidden');
+    echo 'Forbidden: You do not own this listing.';
     exit;
-}
-
-$stmt = $slave_only->prepare("SELECT l.*, p.price, p.stock, s.rate, s.rate_type FROM listings l LEFT JOIN products p ON p.listing_id = l.listing_id LEFT JOIN services s ON s.listing_id = l.listing_id WHERE l.listing_id = ? LIMIT 1");
-$stmt->bind_param('i', $id);
-$stmt->execute();
-$res = $stmt->get_result();
-$row = $res->fetch_assoc();
-
-if (!$row || intval($row['owner_id'] ?? 0) !== $uid) { 
-    header('HTTP/1.1 403 Forbidden'); 
-    echo 'Forbidden: You do not own this listing.'; 
-    exit; 
 }
 
 // --- EXTRACTED SIMPLE VARIABLES ---
@@ -50,22 +39,18 @@ $rate_type    = $row['rate_type'] ?? 'fixed';
 $image_url    = !empty($row['image_url']) ? $row['image_url'] : 'https://images.unsplash.com/photo-1555448248-2571daf6344b?q=80&w=300&auto=format&fit=crop';
 // ----------------------------------
 
-$catStmt = $slave_only->prepare("SELECT category_id, name FROM categories ORDER BY name");
-$catStmt->execute();
-$catRes = $catStmt->get_result();
-$categories = [];
-while ($c = $catRes->fetch_assoc()) $categories[] = $c;
+$categories = fetchAll('SELECT category_id, name FROM categories ORDER BY name');
 
 $portfolioItems = [];
 $pricingItems = [];
 if ($listing_type === 'service') {
-    $portfolioItems = fetchAll(
+    $portfolioItems = fetchAll_master(
         'SELECT portfolio_id, media_type, file_path, grid_span FROM service_portfolio_items WHERE listing_id = ? ORDER BY sort_order ASC, portfolio_id ASC',
-        [$listing_id]
+        [(string) $listing_id]
     );
-    $pricingItems = fetchAll(
+    $pricingItems = fetchAll_master(
         'SELECT item_name, amount FROM service_pricing_items WHERE listing_id = ? ORDER BY sort_order ASC, price_item_id ASC',
-        [$listing_id]
+        [(string) $listing_id]
     );
 }
 $portfolioOrderJson = json_encode(array_map('intval', array_column($portfolioItems, 'portfolio_id')));
@@ -132,7 +117,7 @@ $portfolioSpansJson = json_encode($portfolioSpanMap);
                     <div class="card-body p-4 text-center d-flex flex-column">
                         <h5 class="fw-bold mb-3 text-info text-start"><i class="bi bi-image me-2"></i>Image</h5>
                         <div class="border border-dashed rounded-3 py-5 bg-light flex-grow-1 d-flex flex-column align-items-center justify-content-center">
-                            <img id="preview" src="<?php echo htmlspecialchars($image_url); ?>" alt="Current Image" class="rounded-3 shadow-sm mb-3" style="height:120px; object-fit:cover;">
+                            <img id="preview" src="<?php echo htmlspecialchars(wvsu_listing_media_href((string) $image_url)); ?>" alt="Current Image" class="rounded-3 shadow-sm mb-3" style="height:120px; object-fit:cover;">
 
                             <input type="file" name="product_image" id="product_image" class="form-control w-75 mx-auto" accept="image/*">
                             <p class="mt-2 text-muted small px-3">Upload a new image to replace the current one.</p>
@@ -163,7 +148,7 @@ $portfolioSpansJson = json_encode($portfolioSpanMap);
                                     <?php if ($isVid): ?>
                                         <div class="pf-thumb bg-dark d-flex align-items-center justify-content-center text-white"><i class="bi bi-play-fill"></i></div>
                                     <?php else: ?>
-                                        <img class="pf-thumb" src="<?= htmlspecialchars((string) $p['file_path']) ?>" alt="">
+                                        <img class="pf-thumb" src="<?= htmlspecialchars(wvsu_listing_media_href((string) $p['file_path']), ENT_QUOTES, 'UTF-8') ?>" alt="">
                                     <?php endif; ?>
                                     <span class="small text-truncate flex-grow-1" style="max-width:180px;">#<?= $pid ?> <?= $isVid ? 'Video' : 'Image' ?></span>
                                     <div class="form-check form-switch mb-0">

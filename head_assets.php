@@ -11,10 +11,12 @@ $themePath = __DIR__ . '/css/wvsu-connect-theme.css';
 $entryLoaderCssPath = __DIR__ . '/css/wvsu-entry-loader.css';
 $motionPath = __DIR__ . '/js/wvsu-motion.js';
 $entryLoaderPath = __DIR__ . '/js/wvsu-entry-loader.js';
+$smartBackPath = __DIR__ . '/js/wvsu-smart-back.js';
 $themeVer = is_readable($themePath) ? (string) filemtime($themePath) : '0';
 $entryLoaderCssVer = is_readable($entryLoaderCssPath) ? (string) filemtime($entryLoaderCssPath) : '0';
 $motionVer = is_readable($motionPath) ? (string) filemtime($motionPath) : '0';
 $entryLoaderVer = is_readable($entryLoaderPath) ? (string) filemtime($entryLoaderPath) : '0';
+$smartBackVer = is_readable($smartBackPath) ? (string) filemtime($smartBackPath) : '0';
 
 ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,3 +29,4 @@ $entryLoaderVer = is_readable($entryLoaderPath) ? (string) filemtime($entryLoade
 <link rel="apple-touch-icon" href="assets/wvsuconnectlogo.png">
 <script src="js/wvsu-entry-loader.js?v=<?= htmlspecialchars($entryLoaderVer, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 <script src="js/wvsu-motion.js?v=<?= htmlspecialchars($motionVer, ENT_QUOTES, 'UTF-8') ?>" defer></script>
+<script src="js/wvsu-smart-back.js?v=<?= htmlspecialchars($smartBackVer, ENT_QUOTES, 'UTF-8') ?>" defer></script>

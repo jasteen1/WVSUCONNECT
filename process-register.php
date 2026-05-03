@@ -10,6 +10,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = isset($_POST['email']) ? strtolower(trim((string) $_POST['email'])) : '';
     $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
     $confirm = isset($_POST['confirm_password']) ? (string) $_POST['confirm_password'] : '';
+    $college = wvsu_sanitize_college_code($_POST['college'] ?? '');
+    $year_level = wvsu_sanitize_year_level($_POST['year_level'] ?? null);
+    $course = wvsu_sanitize_course_text($_POST['course'] ?? '');
+
+    if ($full_name === '' || $email === '') {
+        header('Location: register.php?error=' . rawurlencode('Please fill in your name and campus email.'));
+        exit;
+    }
+    if ($college === null) {
+        header('Location: register.php?error=' . rawurlencode('Please select your college or unit.'));
+        exit;
+    }
+    if ($year_level === null) {
+        header('Location: register.php?error=' . rawurlencode('Please select your year level (1st–4th year).'));
+        exit;
+    }
 
     // Simple validation: passwords match
     if ($password !== $confirm) {
@@ -22,7 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $existing = fetch_master($check_sql, [$email]);
     
     if ($existing) {
-        die("Email is already registered. <a href='login.php'>Login here</a>");
+        header(
+            'Location: login.php?' . http_build_query([
+                'error' => 'email_registered',
+                'email' => $email,
+            ])
+        );
+        exit;
     }
 
     // 2. Hash password
@@ -30,9 +52,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
    // 3. Insert new user (Writes to Master)
     // ADDED: role_id column to the query
-    $insert_sql = "INSERT INTO users (full_name, email, password, role_id) VALUES (?, ?, ?, ?)";
-    
-    $new_user_id = insert($insert_sql, [$full_name, $email, $password_hash, 3]);
+    $insert_sql = 'INSERT INTO users (full_name, email, password, role_id, college, year_level, course) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+    $new_user_id = insert($insert_sql, [
+        $full_name,
+        $email,
+        $password_hash,
+        '3',
+        $college,
+        (string) $year_level,
+        $course,
+    ]);
 
     if ($new_user_id) {
         // Redirect back to login with a success message

@@ -6,7 +6,7 @@ if (empty($_SESSION['user_id'])) {
 }
 $uid = intval($_SESSION['user_id']);
 
-$listings = fetchAll(
+$listings = fetchAll_master(
     "SELECT l.*, p.price, p.stock, s.rate, s.rate_type, c.name AS category_name
      FROM listings l
      LEFT JOIN products p ON p.listing_id = l.listing_id
@@ -14,7 +14,7 @@ $listings = fetchAll(
      LEFT JOIN categories c ON c.category_id = l.category_id
      WHERE l.owner_id = ?
      ORDER BY l.created_at DESC",
-    [$uid]
+    [(string) $uid]
 );
 
 $listingProducts = [];

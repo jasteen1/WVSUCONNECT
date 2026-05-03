@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db_conn.php';
 require_once __DIR__ . '/messaging_schema.inc.php';
+require_once __DIR__ . '/wvsu_smart_back.inc.php';
 
 /**
  * One card on the homepage “Recently listed” grid.
@@ -22,6 +23,7 @@ function wvsu_index_render_recent_card(array $item): void
     $href = $isService
         ? 'view-service.php?id=' . $listingId
         : 'view-product.php?id=' . $listingId;
+    $href = wvsu_append_listing_return($href, 'index.php');
     ?>
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 border-0 shadow-sm item-card market-card <?= $isSoldOut ? 'sold-out' : '' ?>">
@@ -264,8 +266,8 @@ $yourListHref = ! empty($_SESSION['user_id']) ? 'your_listings.php' : 'login.php
          WHERE l.status = ? AND l.listing_type = ?
          ORDER BY l.created_at DESC
          LIMIT 4';
-    $recentProducts = fetchAll($recentListSqlBase, ['active', 'product']);
-    $recentServices = fetchAll($recentListSqlBase, ['active', 'service']);
+    $recentProducts = fetchAll_master($recentListSqlBase, ['active', 'product']);
+    $recentServices = fetchAll_master($recentListSqlBase, ['active', 'service']);
     $hasRecentAny = ($recentProducts !== [] || $recentServices !== []);
     ?>
 

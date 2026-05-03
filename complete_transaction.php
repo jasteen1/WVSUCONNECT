@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/db_conn.php';
+require_once __DIR__ . '/messaging_schema.inc.php';
 
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -114,6 +115,7 @@ $ensureMeta = static function () use ($master_conn): void {
             is_closed TINYINT(1) NOT NULL DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
+    wvsu_conversation_meta_ensure_sale_feedback_columns($master_conn);
 };
 
 if (! $master_conn->begin_transaction()) {
@@ -131,16 +133,19 @@ try {
 
     $ensureMeta();
     insert(
-        'INSERT INTO conversation_meta (conversation_id, is_closed) VALUES (?, 1)
-         ON DUPLICATE KEY UPDATE is_closed = 1',
-        [(string) $conv]
+        'INSERT INTO conversation_meta (conversation_id, is_closed, pending_sale_buyer_id, pending_sale_listing_id)
+         VALUES (?, 1, ?, ?)
+         ON DUPLICATE KEY UPDATE is_closed = 1,
+            pending_sale_buyer_id = VALUES(pending_sale_buyer_id),
+            pending_sale_listing_id = VALUES(pending_sale_listing_id)',
+        [(string) $conv, (string) $buyer_id, (string) $listing_id]
     );
 
     $title = trim((string) ($item['title'] ?? 'item'));
     if ($title === '') {
         $title = 'item';
     }
-    $content = 'Seller completed sale for “' . $title . '”. Quantity deducted: ' . $qty . '.';
+    $content = 'Seller completed sale for “' . $title . '”.';
 
     insert(
         'INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)',
