@@ -71,12 +71,12 @@ if ($canViewFull) {
 
 $profileHasAnyListings = $profileListingsProducts !== [] || $profileListingsServices !== [];
 
-/** Legacy profile-only review row (if any); new purchase feedback is submitted only in Messages. */
+/** Latest review you left for this profile (includes purchase feedback from Messages, which has listing_id). */
 $myReview = null;
 if ($meId > 0 && $meId !== $id && $canViewFull) {
     $myReview = fetch_master(
         'SELECT review_id, rating, comment, created_at FROM user_reviews
-         WHERE reviewer_id = ? AND reviewee_id = ? AND (listing_id IS NULL OR listing_id = 0)
+         WHERE reviewer_id = ? AND reviewee_id = ?
          ORDER BY created_at DESC LIMIT 1',
         [(string) $meId, (string) $id]
     );

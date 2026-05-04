@@ -222,13 +222,15 @@ function wvsu_user_reviews_drop_pair_unique_if_present(mysqli $master): void
         $master->query('ALTER TABLE user_reviews DROP INDEX uq_reviewer_reviewee');
     }
 
-    // Any other UNIQUE that is exactly those two columns (renamed dumps, manual DDL, etc.)
+    // Any UNIQUE that is exactly reviewer_id + reviewee_id (any column order — GROUP_CONCAT order varies by engine).
     $q = <<<'SQL'
-SELECT INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols
+SELECT INDEX_NAME
 FROM information_schema.STATISTICS
 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_reviews' AND NON_UNIQUE = 0
 GROUP BY INDEX_NAME
-HAVING cols = 'reviewer_id,reviewee_id'
+HAVING COUNT(*) = 2
+   AND SUM(CASE WHEN COLUMN_NAME = 'reviewer_id' THEN 1 ELSE 0 END) = 1
+   AND SUM(CASE WHEN COLUMN_NAME = 'reviewee_id' THEN 1 ELSE 0 END) = 1
 SQL;
     $uniq = $master->query($q);
     if ($uniq) {
@@ -238,7 +240,7 @@ SQL;
                 continue;
             }
             $esc = $master->real_escape_string($name);
-            $master->query('ALTER TABLE user_reviews DROP INDEX `' . $esc . '`');
+            @$master->query('ALTER TABLE user_reviews DROP INDEX `' . $esc . '`');
         }
     }
 }

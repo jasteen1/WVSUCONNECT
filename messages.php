@@ -596,7 +596,7 @@ if ($selected_conv > 0 && $other_user_id > 0) {
 
 $flashNotice = match ((string) ($_GET['notice'] ?? '')) {
     'conversation_reopened' => 'Chat reopened — you can send messages again.',
-    'sale_feedback_saved' => 'Thanks — your feedback and photo were posted. When you’re ready for another deal, tap Message again — Complete sale / Done service stays hidden for the seller until then.',
+    'sale_feedback_saved' => 'Thanks — your feedback and photo were saved. You can keep messaging in this chat; when you’re ready for another purchase or booking, the seller can use Complete sale or Done service again.',
     'reviews_in_messages' => 'Reviews after a handover are submitted here in the chat after the seller uses Complete sale (product) or Done service — not only on the profile page.',
     'pending_sale_cancelled' => 'The pending completion was cancelled — product stock was restored if it applied, and you can message normally in this chat.',
     'chat_ended' => 'This chat was ended — use Message again whenever you want to continue.',
