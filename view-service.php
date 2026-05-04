@@ -200,7 +200,8 @@ function wvsu_rate_label(string $rateType): string
                     </a>
                 <?php endif; ?>
                 <?php if ($svcIsOwnerLoggedIn): ?>
-                    <a href="edit_listing.php?id=<?= intval($item['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">Edit listing</a>
+                    <a href="edit_listing.php?id=<?= intval($item['listing_id']) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold"
+                       onclick="return confirm('Are you sure you want to edit this service listing?');">Edit listing</a>
                 <?php elseif (!empty($_SESSION['user_id'])): ?>
                     <button class="btn btn-outline-danger rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#reportServiceUser">
                         <i class="bi bi-flag me-1"></i>Report freelancer

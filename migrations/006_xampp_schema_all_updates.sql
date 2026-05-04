@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS user_reviews (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (review_id),
-  UNIQUE KEY uq_reviewer_reviewee (reviewer_id, reviewee_id),
+  KEY idx_reviewer_reviewee_pair (reviewer_id, reviewee_id),
   KEY idx_reviews_reviewee (reviewee_id),
   KEY idx_reviews_listing (listing_id),
   CONSTRAINT fk_ur_reviewer FOREIGN KEY (reviewer_id) REFERENCES users (user_id) ON DELETE CASCADE,

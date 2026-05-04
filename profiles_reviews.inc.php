@@ -158,7 +158,7 @@ function wvsu_user_reviews_ensure_table(mysqli $master): void
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (review_id),
-        UNIQUE KEY uq_reviewer_reviewee (reviewer_id, reviewee_id),
+        KEY idx_reviewer_reviewee_pair (reviewer_id, reviewee_id),
         KEY idx_reviews_reviewee (reviewee_id),
         KEY idx_reviews_listing (listing_id),
         CONSTRAINT fk_ur_reviewer FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -177,7 +177,7 @@ function wvsu_user_reviews_ensure_table(mysqli $master): void
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (review_id),
-            UNIQUE KEY uq_reviewer_reviewee (reviewer_id, reviewee_id),
+            KEY idx_reviewer_reviewee_pair (reviewer_id, reviewee_id),
             KEY idx_reviews_reviewee (reviewee_id),
             KEY idx_reviews_listing (listing_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
@@ -205,7 +205,10 @@ function wvsu_user_reviews_ensure_photo_and_indexes(mysqli $master): void
     wvsu_user_reviews_drop_pair_unique_if_present($master);
 }
 
-/** Drops legacy unique (reviewer_id, reviewee_id) so multiple reviews per pair (e.g. per listing) can exist. */
+/**
+ * Drops legacy UNIQUE indexes on (reviewer_id, reviewee_id) only so buyers can review the same seller
+ * again for a different listing. Does not drop a proper triple (reviewer_id, reviewee_id, listing_id) unique.
+ */
 function wvsu_user_reviews_drop_pair_unique_if_present(mysqli $master): void
 {
     // Blind drop first: some hosts return empty SHOW INDEX until privileges warm up; this is a no-op if the index is already gone.
@@ -217,6 +220,26 @@ function wvsu_user_reviews_drop_pair_unique_if_present(mysqli $master): void
     }
     if (! $dropped && function_exists('wvsu_mysql_index_exists') && wvsu_mysql_index_exists($master, 'user_reviews', 'uq_reviewer_reviewee')) {
         $master->query('ALTER TABLE user_reviews DROP INDEX uq_reviewer_reviewee');
+    }
+
+    // Any other UNIQUE that is exactly those two columns (renamed dumps, manual DDL, etc.)
+    $q = <<<'SQL'
+SELECT INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols
+FROM information_schema.STATISTICS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_reviews' AND NON_UNIQUE = 0
+GROUP BY INDEX_NAME
+HAVING cols = 'reviewer_id,reviewee_id'
+SQL;
+    $uniq = $master->query($q);
+    if ($uniq) {
+        while ($row = $uniq->fetch_assoc()) {
+            $name = (string) ($row['INDEX_NAME'] ?? '');
+            if ($name === '' || strcasecmp($name, 'PRIMARY') === 0) {
+                continue;
+            }
+            $esc = $master->real_escape_string($name);
+            $master->query('ALTER TABLE user_reviews DROP INDEX `' . $esc . '`');
+        }
     }
 }
 

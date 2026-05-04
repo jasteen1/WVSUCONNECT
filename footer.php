@@ -69,7 +69,7 @@ $footerSellService = $fLogged ? 'addservice.php' : 'login.php?next=' . rawurlenc
                         </ul>
                         <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3">
                             <a href="safety.php" class="btn btn-sm btn-light rounded-pill fw-semibold border">Safety tips</a>
-                            <a href="contact.php" class="btn btn-sm btn-outline-light rounded-pill fw-semibold border border-white border-opacity-25">Contact listing</a>
+                            <a href="index.php" class="btn btn-sm btn-outline-light rounded-pill fw-semibold border border-white border-opacity-25" title="Open a product or service listing, then use Contact Seller or Message freelancer">Find listings to message</a>
                             <a href="index.php#get-started" class="wvsu-footer__text-link small fw-semibold">Why WVSU Connect <i class="bi bi-arrow-right-short fs-5 align-middle" aria-hidden="true"></i></a>
                         </div>
                         <div class="wvsu-footer__aside-mark pt-4 mt-2">

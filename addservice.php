@@ -1,5 +1,14 @@
 <?php
 require_once 'db_conn.php';
+
+$serviceCategories = fetchAll_master(
+    "SELECT category_id, name
+     FROM categories
+     WHERE category_type IN ('service', 'both')
+     ORDER BY name ASC",
+    []
+);
+$addSvcErr = (string) ($_GET['error'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,7 +40,14 @@ require_once 'db_conn.php';
         </div>
     </div>
 
-    <form id="svcForm" action="process-add-service.php" method="POST" enctype="multipart/form-data">
+    <?php if ($addSvcErr === 'bad_category'): ?>
+        <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4" role="alert">
+            Please choose a valid category from the list (same set as on the Services page).
+        </div>
+    <?php endif; ?>
+
+    <form id="svcForm" action="process-add-service.php" method="POST" enctype="multipart/form-data"
+          data-wvsu-confirm="Are you sure you want to publish this service listing?">
         <div class="row g-4">
 
             <div class="col-lg-7">
@@ -92,17 +108,21 @@ require_once 'db_conn.php';
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3 text-success"><i class="bi bi-mortarboard me-2"></i>Expertise area</h5>
-                        <label class="form-label fw-semibold">Specialty tag</label>
-                        <select name="category" class="form-select rounded-3" required>
-                            <option value="" selected disabled>Select…</option>
-                            <option value="tutoring">Academic tutoring</option>
-                            <option value="design">Graphic design & arts</option>
-                            <option value="tech">Tech & programming</option>
-                            <option value="errands">Errands & lifestyle</option>
-                            <option value="events">Events & hosting</option>
+                        <h5 class="fw-bold mb-3 text-success"><i class="bi bi-mortarboard me-2"></i>Category</h5>
+                        <label class="form-label fw-semibold" for="addservice_category_id">Marketplace category</label>
+                        <select name="category_id" id="addservice_category_id" class="form-select rounded-3" required>
+                            <option value="" selected disabled>Choose a category…</option>
+                            <?php foreach ($serviceCategories as $sc): ?>
+                                <?php
+                                $scid = (int) ($sc['category_id'] ?? 0);
+                                if ($scid <= 0) {
+                                    continue;
+                                }
+                                ?>
+                                <option value="<?= $scid ?>"><?= htmlspecialchars((string) ($sc['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
                         </select>
-                        <p class="mt-3 small text-muted mb-0">Category is displayed to help students discover you.</p>
+                        <p class="mt-3 small text-muted mb-0">Same categories as the <a href="services.php">Services</a> page filters so buyers can find you consistently.</p>
                     </div>
                 </div>
             </div>
@@ -169,6 +189,7 @@ require_once 'db_conn.php';
 <?php include __DIR__ . '/footer.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/wvsu-form-confirm.js"></script>
 <script>
 (function () {
     const picker = document.getElementById('portfolioPicker');

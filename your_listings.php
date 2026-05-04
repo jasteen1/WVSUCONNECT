@@ -12,7 +12,7 @@ $listings = fetchAll_master(
      LEFT JOIN products p ON p.listing_id = l.listing_id
      LEFT JOIN services s ON s.listing_id = l.listing_id
      LEFT JOIN categories c ON c.category_id = l.category_id
-     WHERE l.owner_id = ?
+     WHERE l.owner_id = ? AND l.status IN ('active', 'sold_out')
      ORDER BY l.created_at DESC",
     [(string) $uid]
 );
@@ -33,6 +33,7 @@ foreach ($listings as $item) {
  * @param array<string,mixed> $l
  */
 $wvsu_yourlisting_card = static function ($l): void {
+    $kind = (($l['listing_type'] ?? '') === 'service') ? 'service' : 'product';
     $isSold = (($l['listing_type'] ?? '') === 'product' && intval($l['stock'] ?? 0) <= 0);
     $img = ! empty($l['image_url'])
         ? (string) $l['image_url']
@@ -91,15 +92,18 @@ $wvsu_yourlisting_card = static function ($l): void {
                         <div class="mb-3 d-none d-md-block" style="height: 45px;"></div>
                     <?php endif; ?>
                     <div class="d-flex gap-2 w-100 justify-content-md-end">
-                      <a class="btn btn-sm btn-light border fw-bold text-secondary flex-grow-1 flex-md-grow-0" href="edit_listing.php?id=<?= intval($l['listing_id']) ?>">
+                      <a class="btn btn-sm btn-light border fw-bold text-secondary flex-grow-1 flex-md-grow-0"
+                         href="edit_listing.php?id=<?= intval($l['listing_id']) ?>"
+                         onclick="return confirm('Are you sure you want to edit this <?= $kind === 'service' ? 'service' : 'product' ?> listing?');">
                         <i class="bi bi-pencil-square me-1"></i>Edit
                       </a>
-                      <form method="post" action="process-delete-listing.php" onsubmit="return confirm('Are you sure you want to delete this listing?')" class="d-inline flex-grow-1 flex-md-grow-0">
-                        <input type="hidden" name="listing_id" value="<?= intval($l['listing_id']) ?>">
-                        <button class="btn btn-sm btn-outline-danger fw-bold w-100" type="submit">
-                          <i class="bi bi-trash3 me-1"></i>Delete
-                        </button>
-                      </form>
+                      <button type="button" class="btn btn-sm btn-outline-danger fw-bold flex-grow-1 flex-md-grow-0 w-100"
+                              data-bs-toggle="modal" data-bs-target="#wvsuDeleteListingModal"
+                              data-listing-id="<?= intval($l['listing_id']) ?>"
+                              data-listing-title="<?= htmlspecialchars((string) ($l['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                              data-listing-kind="<?= htmlspecialchars($kind, ENT_QUOTES, 'UTF-8') ?>">
+                        <i class="bi bi-trash3 me-1"></i>Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -137,7 +141,18 @@ $wvsu_yourlisting_card = static function ($l): void {
 <?php include 'navbar.php'; ?>
 
 <div class="container mt-5 mb-5 pb-5 wvsu-pan-soft" style="max-width: 900px;" data-io-animate>
-  
+
+  <?php if (! empty($_GET['removed'])): ?>
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4" role="alert">
+      Listing removed from your page and hidden from the marketplace.
+    </div>
+  <?php endif; ?>
+  <?php if (! empty($_GET['error']) && (string) $_GET['error'] === 'delete_failed'): ?>
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4" role="alert">
+      Could not remove that listing (the database may have rolled the change back). Reload the site once so setup can fix log tables, then try again. If it persists, open <code>db_conn_debug.log</code> in this folder and check for <code>alter_item_status_autoinc</code> / <code>alter_audit_logs_autoinc</code> errors.
+    </div>
+  <?php endif; ?>
+
   <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
     <div class="d-flex align-items-center">
         <a href="index.php" class="text-dark text-decoration-none me-3" title="Back to Home">
@@ -149,10 +164,12 @@ $wvsu_yourlisting_card = static function ($l): void {
         </div>
     </div>
     <div class="d-none d-md-flex align-items-center gap-2 flex-shrink-0">
-        <a class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold shadow-sm" href="addproduct.php">
+        <a class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold shadow-sm" href="addproduct.php"
+           onclick="return confirm('Go to the form to add a new product listing?');">
             <i class="bi bi-bag-fill me-1"></i>Product
         </a>
-        <a class="btn btn-outline-info rounded-pill px-3 py-2 fw-semibold shadow-sm" href="addservice.php">
+        <a class="btn btn-outline-info rounded-pill px-3 py-2 fw-semibold shadow-sm" href="addservice.php"
+           onclick="return confirm('Go to the form to add a new service listing?');">
             <i class="bi bi-palette2 me-1"></i>Service
         </a>
     </div>
@@ -161,8 +178,8 @@ $wvsu_yourlisting_card = static function ($l): void {
             <i class="bi bi-plus-lg"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow rounded-4 border-secondary-subtle">
-            <li><a class="dropdown-item rounded-3 fw-semibold" href="addproduct.php"><i class="bi bi-bag-fill me-2 text-primary"></i>Add product</a></li>
-            <li><a class="dropdown-item rounded-3 fw-semibold" href="addservice.php"><i class="bi bi-palette2 me-2 text-info"></i>Offer service</a></li>
+            <li><a class="dropdown-item rounded-3 fw-semibold" href="addproduct.php" onclick="return confirm('Go to the form to add a new product listing?');"><i class="bi bi-bag-fill me-2 text-primary"></i>Add product</a></li>
+            <li><a class="dropdown-item rounded-3 fw-semibold" href="addservice.php" onclick="return confirm('Go to the form to add a new service listing?');"><i class="bi bi-palette2 me-2 text-info"></i>Offer service</a></li>
         </ul>
     </div>
   </div>
@@ -176,8 +193,8 @@ $wvsu_yourlisting_card = static function ($l): void {
             <h4 class="fw-bold">No listings yet!</h4>
             <p class="text-muted mb-4">You haven't posted any products or services to the marketplace.</p>
             <div class="d-flex flex-wrap justify-content-center gap-2">
-                <a href="addproduct.php" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">List a product</a>
-                <a href="addservice.php" class="btn btn-outline-primary rounded-pill px-4 fw-bold">Offer a service</a>
+                <a href="addproduct.php" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="return confirm('Go to the form to add a new product listing?');">List a product</a>
+                <a href="addservice.php" class="btn btn-outline-primary rounded-pill px-4 fw-bold" onclick="return confirm('Go to the form to add a new service listing?');">Offer a service</a>
             </div>
         </div>
     </div>
@@ -201,14 +218,14 @@ $wvsu_yourlisting_card = static function ($l): void {
                 Products
             </h4>
             <?php if ($pc > 0): ?>
-                <a href="addproduct.php" class="btn btn-sm btn-link text-decoration-none fw-semibold px-1">Add product <i class="bi bi-arrow-right-short"></i></a>
+                <a href="addproduct.php" class="btn btn-sm btn-link text-decoration-none fw-semibold px-1" onclick="return confirm('Go to the form to add a new product listing?');">Add product <i class="bi bi-arrow-right-short"></i></a>
             <?php endif; ?>
         </header>
         <?php if ($pc <= 0): ?>
             <div class="rounded-4 border border-dashed border-secondary-subtle bg-light-subtle p-4 text-center text-muted small">
                 <p class="mb-2 fw-semibold text-dark">No product listings yet</p>
                 <p class="mb-3 mb-md-4">Sell textbooks, gadgets, apparel, or anything students need.</p>
-                <a href="addproduct.php" class="btn btn-primary rounded-pill btn-sm fw-bold px-4">Add a product</a>
+                <a href="addproduct.php" class="btn btn-primary rounded-pill btn-sm fw-bold px-4" onclick="return confirm('Go to the form to add a new product listing?');">Add a product</a>
             </div>
         <?php else: ?>
             <div class="row g-4">
@@ -224,14 +241,14 @@ $wvsu_yourlisting_card = static function ($l): void {
                 Services
             </h4>
             <?php if ($sc > 0): ?>
-                <a href="addservice.php" class="btn btn-sm btn-link text-info text-decoration-none fw-semibold px-1">Offer a service <i class="bi bi-arrow-right-short"></i></a>
+                <a href="addservice.php" class="btn btn-sm btn-link text-info text-decoration-none fw-semibold px-1" onclick="return confirm('Go to the form to add a new service listing?');">Offer a service <i class="bi bi-arrow-right-short"></i></a>
             <?php endif; ?>
         </header>
         <?php if ($sc <= 0): ?>
             <div class="rounded-4 border border-dashed border-secondary-subtle bg-light-subtle p-4 text-center text-muted small">
                 <p class="mb-2 fw-semibold text-dark">No service listings yet</p>
                 <p class="mb-3 mb-md-4">Tutoring, design, gigs—list what you can do for classmates.</p>
-                <a href="addservice.php" class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-4">Add a service</a>
+                <a href="addservice.php" class="btn btn-outline-primary rounded-pill btn-sm fw-bold px-4" onclick="return confirm('Go to the form to add a new service listing?');">Add a service</a>
             </div>
         <?php else: ?>
             <div class="row g-4">
@@ -242,7 +259,47 @@ $wvsu_yourlisting_card = static function ($l): void {
   <?php endif; ?>
 </div>
 
+<div class="modal fade" id="wvsuDeleteListingModal" tabindex="-1" aria-labelledby="wvsuDeleteListingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h2 class="modal-title h5 fw-bold" id="wvsuDeleteListingModalLabel">Remove listing?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <p class="mb-0 text-muted" id="wvsuDeleteListingModalBody"></p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="process-delete-listing.php" class="d-inline">
+          <input type="hidden" name="listing_id" id="wvsuDeleteListingModalListingId" value="">
+          <button type="submit" class="btn btn-danger rounded-pill fw-semibold">Yes, remove it</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php include __DIR__ . '/footer.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  var modal = document.getElementById('wvsuDeleteListingModal');
+  if (!modal) return;
+  modal.addEventListener('show.bs.modal', function (event) {
+    var btn = event.relatedTarget;
+    if (!btn) return;
+    var id = btn.getAttribute('data-listing-id') || '';
+    var title = btn.getAttribute('data-listing-title') || 'this listing';
+    var kind = btn.getAttribute('data-listing-kind') || 'listing';
+    var idInput = document.getElementById('wvsuDeleteListingModalListingId');
+    var body = document.getElementById('wvsuDeleteListingModalBody');
+    if (idInput) idInput.value = id;
+    if (body) {
+      body.textContent = 'Remove “' + title + '” (' + kind + ') from your listings? It will be hidden from the marketplace. You can list again anytime.';
+    }
+  });
+})();
+</script>
 </body>
 </html>

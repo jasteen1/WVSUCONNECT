@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Seller marks a service booking as done in-chat (no stock change).
+ * Reuses conversation_meta pending_sale_* so the buyer uses the same feedback flow as products.
+ */
+
 require_once __DIR__ . '/db_conn.php';
 require_once __DIR__ . '/messaging_schema.inc.php';
 
@@ -17,11 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $me = (int) $_SESSION['user_id'];
 $conv = (int) ($_POST['conv_id'] ?? 0);
-$qty = max(1, (int) ($_POST['quantity'] ?? 1));
 $listing_id = (int) ($_POST['listing_id'] ?? 0);
 
 if ($conv <= 0) {
-    header('Location: messages.php?error=complete_tx');
+    header('Location: messages.php?error=complete_svc');
     exit;
 }
 
@@ -29,6 +33,7 @@ if ($listing_id <= 0) {
     $pick = fetch_master(
         'SELECT cl.listing_id FROM conversation_listings cl
             INNER JOIN listings l ON l.listing_id = cl.listing_id
+            INNER JOIN services s ON s.listing_id = l.listing_id
             WHERE cl.conversation_id = ? AND l.owner_id = ?
             ORDER BY cl.id DESC
             LIMIT 1',
@@ -40,7 +45,7 @@ if ($listing_id <= 0) {
 }
 
 if ($listing_id <= 0) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_no_listing');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_no_listing');
     exit;
 }
 
@@ -49,31 +54,31 @@ $mapped = fetch_master(
     [(string) $conv, (string) $listing_id]
 );
 if (! $mapped) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_bad_listing');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_bad_listing');
     exit;
 }
 
 $item = fetch_master(
-    'SELECT l.listing_id, l.owner_id, l.title, l.listing_type, p.price, p.stock
+    'SELECT l.listing_id, l.owner_id, l.title, l.listing_type
      FROM listings l
-     INNER JOIN products p ON p.listing_id = l.listing_id
+     INNER JOIN services s ON s.listing_id = l.listing_id
      WHERE l.listing_id = ?
      LIMIT 1',
     [(string) $listing_id]
 );
 
 if (! $item) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_product_only');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_service_only');
     exit;
 }
 
-if (strtolower(trim((string) ($item['listing_type'] ?? 'product'))) !== 'product') {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_product_only');
+if (strtolower(trim((string) ($item['listing_type'] ?? 'product'))) !== 'service') {
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_service_only');
     exit;
 }
 
 if ((int) $item['owner_id'] !== $me) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_seller_only');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_seller_only');
     exit;
 }
 
@@ -82,27 +87,21 @@ $c = fetch_master(
     [(string) $conv]
 );
 if (! $c) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc');
     exit;
 }
 
 $a = (int) $c['participant_a'];
 $b = (int) $c['participant_b'];
 if ($me !== $a && $me !== $b) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc');
     exit;
 }
 
 $buyer_id = ($a === $me) ? $b : $a;
 
 if ($buyer_id <= 0) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
-    exit;
-}
-
-$stock = (int) $item['stock'];
-if ($stock < $qty) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_stock');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc');
     exit;
 }
 
@@ -119,19 +118,13 @@ $ensureMeta = static function () use ($master_conn): void {
 };
 
 if (! $master_conn->begin_transaction()) {
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc');
     exit;
 }
 
 try {
-    insert('UPDATE products SET stock = stock - ? WHERE listing_id = ?', [(string) $qty, (string) $listing_id]);
-
-    $newStockRow = fetch_master('SELECT stock FROM products WHERE listing_id = ? LIMIT 1', [(string) $listing_id]);
-    if ($newStockRow && (int) $newStockRow['stock'] <= 0) {
-        insert('UPDATE listings SET status = \'sold_out\' WHERE listing_id = ?', [(string) $listing_id]);
-    }
-
     $ensureMeta();
+    $qty = 1;
     insert(
         'INSERT INTO conversation_meta (conversation_id, is_closed, pending_sale_buyer_id, pending_sale_listing_id, pending_sale_qty)
          VALUES (?, 1, ?, ?, ?)
@@ -142,11 +135,11 @@ try {
         [(string) $conv, (string) $buyer_id, (string) $listing_id, (string) $qty]
     );
 
-    $title = trim((string) ($item['title'] ?? 'item'));
+    $title = trim((string) ($item['title'] ?? 'service'));
     if ($title === '') {
-        $title = 'item';
+        $title = 'service';
     }
-    $content = 'Seller completed sale for “' . $title . '”.';
+    $content = 'Freelancer marked this service as done for “' . $title . '”.';
 
     insert(
         'INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)',
@@ -160,9 +153,9 @@ try {
     $master_conn->commit();
 } catch (Throwable $e) {
     $master_conn->rollback();
-    header('Location: messages.php?conv=' . $conv . '&error=complete_tx_failed');
+    header('Location: messages.php?conv=' . $conv . '&error=complete_svc_failed');
     exit;
 }
 
-header('Location: messages.php?conv=' . $conv . '&success=transaction_completed');
+header('Location: messages.php?conv=' . $conv . '&success=service_completed');
 exit;

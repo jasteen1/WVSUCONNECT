@@ -33,6 +33,11 @@ function wvsu_conversation_meta_ensure_sale_feedback_columns(mysqli $master): vo
             'ALTER TABLE conversation_meta ADD COLUMN pending_sale_listing_id INT UNSIGNED NULL DEFAULT NULL AFTER pending_sale_buyer_id'
         );
     }
+    if (! wvsu_mysql_column_exists($master, 'conversation_meta', 'pending_sale_qty')) {
+        $master->query(
+            'ALTER TABLE conversation_meta ADD COLUMN pending_sale_qty INT UNSIGNED NOT NULL DEFAULT 1 AFTER pending_sale_listing_id'
+        );
+    }
 }
 
 /**

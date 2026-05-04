@@ -91,7 +91,14 @@ $portfolioSpansJson = json_encode($portfolioSpanMap);
         <h2 class="fw-bold mb-0">Edit Listing</h2>
     </div>
 
-    <form action="process-edit-listing.php" method="POST" enctype="multipart/form-data">
+    <form action="process-edit-listing.php" method="POST" enctype="multipart/form-data"
+          data-wvsu-confirm="<?php echo htmlspecialchars(
+              ($listing_type === 'service')
+                  ? 'Are you sure you want to save these changes to your service listing?'
+                  : 'Are you sure you want to save these changes to your product listing?',
+              ENT_QUOTES,
+              'UTF-8'
+          ); ?>">
         <input type="hidden" name="listing_id" value="<?php echo $listing_id; ?>">
         <input type="hidden" name="existing_image_url" value="<?php echo htmlspecialchars($row['image_url'] ?? ''); ?>">
         
@@ -430,5 +437,6 @@ $portfolioSpansJson = json_encode($portfolioSpanMap);
 
 <?php include __DIR__ . '/footer.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/wvsu-form-confirm.js"></script>
 </body>
 </html>

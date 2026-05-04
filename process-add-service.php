@@ -16,6 +16,16 @@ $owner_id = (int) $_SESSION['user_id'];
 $title = trim((string) ($_POST['service_title'] ?? ''));
 $description = trim((string) ($_POST['description'] ?? ''));
 
+$category_id = (int) ($_POST['category_id'] ?? 0);
+$catRow = fetch_master(
+    'SELECT category_id FROM categories WHERE category_id = ? AND category_type IN (\'service\', \'both\') LIMIT 1',
+    [(string) $category_id]
+);
+if (! $catRow) {
+    header('Location: addservice.php?error=bad_category');
+    exit;
+}
+
 /** Use shared parser — floatval("1,500") becomes 1.0 in PHP, which wrongly fails validation */
 $rate = wvsu_parse_money_string((string) ($_POST['rate'] ?? ''));
 
@@ -62,16 +72,6 @@ if ($messages !== []) {
     );
 }
 
-$category_key = strtolower(trim((string) ($_POST['category'] ?? '')));
-$category_map = [
-    'tutoring' => 13,
-    'design' => 15,
-    'tech' => 17,
-    'errands' => 8,
-    'events' => 8,
-];
-$category_id = $category_map[$category_key] ?? 8;
-
 $portfolioSpans = [];
 if (!empty($_POST['portfolio_spans'])) {
     $dec = json_decode((string) $_POST['portfolio_spans'], true);
@@ -106,7 +106,10 @@ if (!empty($_FILES['service_image']) && $_FILES['service_image']['error'] === UP
 
 // Insert listing placeholder to get listing_id (portfolio needs id in path — we use temp naming without id in wvsu_save)
 $insertListingSql = 'INSERT INTO listings (owner_id, category_id, listing_type, title, description, image_url) VALUES (?, ?, \'service\', ?, ?, ?)';
-$listing_id = (int) insert($insertListingSql, [$owner_id, $category_id, $title, $description, $image_url]);
+$listing_id = (int) insert(
+    $insertListingSql,
+    [(string) $owner_id, (string) $category_id, $title, $description, $image_url === null ? '' : (string) $image_url]
+);
 
 if (!$listing_id) {
     die('Failed to create listing.');

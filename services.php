@@ -142,7 +142,7 @@ function wvsu_services_rate_text($rate, $rateType): string {
                 <p class="text-muted mb-0">Show your portfolio, set per-output pricing, get discovered by students who need your skills this week.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="<?= htmlspecialchars($offerHref) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                <a href="<?= htmlspecialchars($offerHref) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold"<?= ! empty($_SESSION['user_id']) ? ' onclick="return confirm(\'Go to the form to add a new service listing?\');"' : '' ?>>
                     <i class="bi bi-rocket-takeoff me-1"></i> Start offering
                 </a>
                 <a href="#service-tips" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">Tips</a>

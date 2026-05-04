@@ -1109,7 +1109,7 @@ ALTER TABLE `user_reports`
 --
 ALTER TABLE `user_reviews`
   ADD PRIMARY KEY (`review_id`),
-  ADD UNIQUE KEY `uq_reviewer_reviewee` (`reviewer_id`,`reviewee_id`),
+  ADD KEY `idx_reviewer_reviewee_pair` (`reviewer_id`,`reviewee_id`),
   ADD KEY `idx_reviews_reviewee` (`reviewee_id`),
   ADD KEY `idx_reviews_listing` (`listing_id`);
 

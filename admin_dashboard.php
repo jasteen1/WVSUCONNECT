@@ -9,6 +9,19 @@ if (!wvsu_user_is_admin($master_conn, $adminId)) {
 }
 wvsu_moderation_ensure_tables($master_conn);
 
+$listingQ = trim((string) ($_GET['listing_q'] ?? ''));
+$listingType = strtolower(trim((string) ($_GET['listing_type'] ?? '')));
+$listingStatus = strtolower(trim((string) ($_GET['listing_status'] ?? '')));
+if (! in_array($listingType, ['product', 'service'], true)) {
+    $listingType = '';
+}
+if (! in_array($listingStatus, ['active', 'inactive', 'sold_out', 'banned'], true)) {
+    $listingStatus = '';
+}
+$hasListingFilters = $listingQ !== ''
+    || $listingType !== ''
+    || $listingStatus !== '';
+
 $stats = fetch(
     "SELECT
       (SELECT COUNT(*) FROM listings) AS total_listings,
@@ -17,14 +30,35 @@ $stats = fetch(
       (SELECT COUNT(*) FROM user_reports WHERE status IN ('pending','reviewing')) AS open_reports"
 );
 
-$listings = fetchAll(
-    "SELECT l.listing_id, l.title, l.listing_type, l.status, l.created_at,
+$listingsSql = "SELECT l.listing_id, l.title, l.listing_type, l.status, l.created_at,
             u.user_id, u.full_name, u.email, u.is_active
      FROM listings l
      JOIN users u ON u.user_id = l.owner_id
-     ORDER BY l.created_at DESC
-     LIMIT 120"
-);
+     WHERE 1=1";
+$listingsParams = [];
+if ($listingQ !== '') {
+    $listingsSql .= " AND (l.title LIKE CONCAT('%', ?, '%') OR IFNULL(l.description, '') LIKE CONCAT('%', ?, '%')
+        OR u.full_name LIKE CONCAT('%', ?, '%') OR u.email LIKE CONCAT('%', ?, '%')";
+    $listingsParams[] = $listingQ;
+    $listingsParams[] = $listingQ;
+    $listingsParams[] = $listingQ;
+    $listingsParams[] = $listingQ;
+    if (ctype_digit($listingQ)) {
+        $listingsSql .= ' OR l.listing_id = ?';
+        $listingsParams[] = (string) (int) $listingQ;
+    }
+    $listingsSql .= ')';
+}
+if ($listingType !== '') {
+    $listingsSql .= ' AND l.listing_type = ?';
+    $listingsParams[] = $listingType;
+}
+if ($listingStatus !== '') {
+    $listingsSql .= ' AND l.status = ?';
+    $listingsParams[] = $listingStatus;
+}
+$listingsSql .= ' ORDER BY l.created_at DESC LIMIT 120';
+$listings = fetchAll_master($listingsSql, $listingsParams);
 
 $reports = fetchAll(
     "SELECT r.*, 
@@ -160,6 +194,46 @@ $recentActions = fetchAll(
     <section class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <h2 class="h5 fw-bold mb-3">All listings</h2>
+            <form class="border rounded-3 bg-light p-3 mb-3" method="get" action="admin_dashboard.php" id="wvsuAdminListingsFilter">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4 col-lg-4">
+                        <label class="form-label small fw-semibold mb-0" for="listing_q">Search</label>
+                        <input type="search" class="form-control form-control-sm" name="listing_q" id="listing_q"
+                               placeholder="Title, description, seller name, email, or listing ID"
+                               value="<?= htmlspecialchars($listingQ, ENT_QUOTES, 'UTF-8') ?>">
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small fw-semibold mb-0" for="listing_type">Type</label>
+                        <select class="form-select form-select-sm" name="listing_type" id="listing_type">
+                            <option value="" <?= $listingType === '' ? 'selected' : '' ?>>All types</option>
+                            <option value="product" <?= $listingType === 'product' ? 'selected' : '' ?>>Product</option>
+                            <option value="service" <?= $listingType === 'service' ? 'selected' : '' ?>>Service</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small fw-semibold mb-0" for="listing_status">Status</label>
+                        <select class="form-select form-select-sm" name="listing_status" id="listing_status">
+                            <option value="" <?= $listingStatus === '' ? 'selected' : '' ?>>All statuses</option>
+                            <option value="active" <?= $listingStatus === 'active' ? 'selected' : '' ?>>Active</option>
+                            <option value="inactive" <?= $listingStatus === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                            <option value="sold_out" <?= $listingStatus === 'sold_out' ? 'selected' : '' ?>>Sold out</option>
+                            <option value="banned" <?= $listingStatus === 'banned' ? 'selected' : '' ?>>Banned</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-4 d-flex flex-wrap gap-2 align-items-end">
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-search me-1" aria-hidden="true"></i>Search
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-funnel me-1" aria-hidden="true"></i>Filter
+                        </button>
+                        <?php if ($hasListingFilters): ?>
+                            <a href="admin_dashboard.php" class="btn btn-sm btn-link text-secondary px-2">Clear</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <p class="small text-muted mb-0 mt-2">Search matches title, description, owner name, and email. Use <strong>Filter</strong> to narrow by type and listing status (both apply together).</p>
+            </form>
             <div class="table-responsive">
                 <table class="table table-sm align-middle">
                     <thead>
@@ -173,6 +247,13 @@ $recentActions = fetchAll(
                     </tr>
                     </thead>
                     <tbody>
+                    <?php if (empty($listings)): ?>
+                        <tr>
+                            <td colspan="6" class="text-muted py-4 text-center">
+                                No listings match your search or filters. <a href="admin_dashboard.php">Show all listings</a>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
                     <?php foreach ($listings as $l): ?>
                         <tr>
                             <td><?= intval($l['listing_id']) ?></td>

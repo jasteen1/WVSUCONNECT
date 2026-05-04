@@ -92,6 +92,12 @@ $heroProductCount = (int) ($heroCounts['pc'] ?? 0);
 $heroServiceCount = (int) ($heroCounts['sc'] ?? 0);
 $productSell = ! empty($_SESSION['user_id']) ? 'addproduct.php' : 'login.php?next=' . rawurlencode('addproduct.php');
 $serviceSell = ! empty($_SESSION['user_id']) ? 'addservice.php' : 'login.php?next=' . rawurlencode('addservice.php');
+$idxSellProductClick = ! empty($_SESSION['user_id'])
+    ? ' onclick="return confirm(\'Go to the form to add a new product listing?\');"'
+    : '';
+$idxSellServiceClick = ! empty($_SESSION['user_id'])
+    ? ' onclick="return confirm(\'Go to the form to add a new service listing?\');"'
+    : '';
 $msgHref = ! empty($_SESSION['user_id'])
     ? wvsu_user_messages_nav_state((int) $_SESSION['user_id'])['inbox_href']
     : 'login.php?next=' . rawurlencode('messages.php');
@@ -186,8 +192,8 @@ $yourListHref = ! empty($_SESSION['user_id']) ? 'your_listings.php' : 'login.php
                         <li><i class="bi bi-check-circle-fill text-primary" aria-hidden="true"></i> <span>Honest descriptions &rarr; fewer flaky meet-ups.</span></li>
                     </ul>
                     <div class="wvsu-process-step__actions">
-                        <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">List a product</a>
-                        <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold text-dark">Offer a service</a>
+                        <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold"<?= $idxSellProductClick ?>>List a product</a>
+                        <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold text-dark"<?= $idxSellServiceClick ?>>Offer a service</a>
                         <a href="<?= htmlspecialchars($yourListHref) ?>" class="btn btn-link btn-sm px-2 fw-semibold">Manage listings</a>
                     </div>
                 </div>
@@ -312,8 +318,8 @@ $yourListHref = ! empty($_SESSION['user_id']) ? 'your_listings.php' : 'login.php
             <h3 class="wvsu-process-show__finale-title mb-2">Thousands of taps start with one — yours can be next.</h3>
             <p class="wvsu-process-show__finale-desc mx-auto mb-4 mb-lg-5">Shopping, hustling side income, booking a barkada artist? Same playbook: list or browse → message → meet on campus.</p>
             <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 justify-content-center align-items-stretch align-items-sm-center">
-                <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-warning rounded-pill px-4 fw-bold text-dark shadow-sm"><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>Sell something today</a>
-                <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-outline-light rounded-pill px-4 fw-semibold border-2">Monetize a skill</a>
+                <a href="<?= htmlspecialchars($productSell) ?>" class="btn btn-warning rounded-pill px-4 fw-bold text-dark shadow-sm"<?= $idxSellProductClick ?>><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>Sell something today</a>
+                <a href="<?= htmlspecialchars($serviceSell) ?>" class="btn btn-outline-light rounded-pill px-4 fw-semibold border-2"<?= $idxSellServiceClick ?>>Monetize a skill</a>
                 <a href="#recently-listed" class="btn btn-link fw-semibold text-white text-opacity-90">Jump to newest listings ↑</a>
             </div>
         </div>

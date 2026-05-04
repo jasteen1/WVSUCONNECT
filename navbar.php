@@ -19,6 +19,12 @@ $navProductSell = !empty($_SESSION['user_id'])
 $navServiceSell = !empty($_SESSION['user_id'])
     ? 'addservice.php'
     : 'login.php?next=' . rawurlencode('addservice.php');
+$navSellProductClick = ! empty($_SESSION['user_id'])
+    ? ' onclick="return confirm(\'Go to the form to add a new product listing?\');"'
+    : '';
+$navSellServiceClick = ! empty($_SESSION['user_id'])
+    ? ' onclick="return confirm(\'Go to the form to add a new service listing?\');"'
+    : '';
 /** Sticky nav scrolls page content underneath it; messages is a full-height inbox where that hides the chat header. */
 $navStickyClass = ($navActive === 'messages.php') ? '' : ' sticky-top';
 
@@ -70,13 +76,13 @@ include __DIR__ . '/entry_loader.inc.php';
                         <li><hr class="dropdown-divider my-2"></li>
                         <li class="px-1 pb-1"><span class="navbar-wvsu__shortcut-heading">Sell</span></li>
                         <li>
-                            <a class="dropdown-item navbar-wvsu__shortcut-item rounded-3 py-2 d-flex align-items-center gap-2" href="<?= htmlspecialchars($navProductSell) ?>">
+                            <a class="dropdown-item navbar-wvsu__shortcut-item rounded-3 py-2 d-flex align-items-center gap-2" href="<?= htmlspecialchars($navProductSell) ?>"<?= $navSellProductClick ?>>
                                 <span class="navbar-wvsu__shortcut-ico navbar-wvsu__shortcut-ico--gold" aria-hidden="true"><i class="bi bi-plus-lg"></i></span>
                                 <span class="flex-grow-1"><span class="d-block fw-bold">List a product</span><span class="d-block small text-muted fw-normal">Stuff, gear &amp; goods</span></span>
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item navbar-wvsu__shortcut-item rounded-3 py-2 d-flex align-items-center gap-2" href="<?= htmlspecialchars($navServiceSell) ?>">
+                            <a class="dropdown-item navbar-wvsu__shortcut-item rounded-3 py-2 d-flex align-items-center gap-2" href="<?= htmlspecialchars($navServiceSell) ?>"<?= $navSellServiceClick ?>>
                                 <span class="navbar-wvsu__shortcut-ico navbar-wvsu__shortcut-ico--gold" aria-hidden="true"><i class="bi bi-stars"></i></span>
                                 <span class="flex-grow-1"><span class="d-block fw-bold">Offer a service</span><span class="d-block small text-muted fw-normal">Rates &amp; portfolio</span></span>
                             </a>

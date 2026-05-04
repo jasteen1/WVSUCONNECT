@@ -106,6 +106,12 @@ $resPai = @$master_conn->query('ALTER TABLE products MODIFY product_id INT UNSIG
 $resSai = @$master_conn->query('ALTER TABLE services MODIFY service_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
 @file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_services_autoinc=' . ($resSai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
 
+// Listing status trigger inserts into item_status + audit_logs; without AUTO_INCREMENT those inserts fail and the UPDATE rolls back.
+$resIsai = @$master_conn->query('ALTER TABLE item_status MODIFY status_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+@file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_item_status_autoinc=' . ($resIsai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
+$resAlai = @$master_conn->query('ALTER TABLE audit_logs MODIFY log_id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+@file_put_contents(__DIR__ . '/db_conn_debug.log', 'alter_audit_logs_autoinc=' . ($resAlai ? 'ok' : 'fail') . ',errno=' . intval($master_conn->errno) . ',err=' . $master_conn->error . "\n", FILE_APPEND);
+
 // Service portfolio media (photos / videos); safe to omit FK if migrations differ.
 @include_once __DIR__ . '/service_portfolio.inc.php';
 if (function_exists('wvsu_service_portfolio_ensure_table')) {

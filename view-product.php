@@ -107,6 +107,8 @@ $wvsuListingBackUseHistory = $wvsuReturnTo === '';
                 <a href="contact.php?listing_id=<?= intval($item['listing_id']) ?>" class="btn btn-outline-primary">Contact Seller</a>
                 <?php if (intval($item['owner_id']) === (int)($_SESSION['user_id'] ?? 0)): ?>
                     <span class="badge bg-secondary">Your listing</span>
+                    <a href="edit_listing.php?id=<?= intval($item['listing_id']) ?>" class="btn btn-sm btn-primary rounded-pill fw-semibold"
+                       onclick="return confirm('Are you sure you want to edit this product listing?');">Edit listing</a>
                 <?php else: ?>
                     <?php if (!empty($_SESSION['user_id'])): ?>
                         <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#reportSellerForm" aria-expanded="false">

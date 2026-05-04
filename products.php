@@ -125,7 +125,7 @@ $products = fetchAll_master($productsSql, $params);
                 <h2 class="h5 fw-bold mb-1">Have something to sell? Put an item now!</h2>
                 <p class="text-muted mb-0">List your books, gadgets, uniforms, and campus essentials in minutes.</p>
             </div>
-            <a href="<?= htmlspecialchars($sellHref) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold">
+            <a href="<?= htmlspecialchars($sellHref) ?>" class="btn btn-primary rounded-pill px-4 fw-semibold"<?= ! empty($_SESSION['user_id']) ? ' onclick="return confirm(\'Go to the form to add a new product listing?\');"' : '' ?>>
                 <i class="bi bi-plus-circle me-1"></i> List an item
             </a>
         </div>

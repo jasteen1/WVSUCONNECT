@@ -171,7 +171,7 @@ if ($existingReview) {
             }
             $u->close();
         }
-        wvsu_finalize_sale_feedback_conversation($conv, $me);
+        wvsu_finalize_sale_feedback_conversation($conv, $me, $listingId);
         $master_conn->commit();
     } catch (Throwable $e) {
         $master_conn->rollback();
@@ -194,7 +194,8 @@ if ($existingReview) {
 }
 
 $insertAttempt = 0;
-while ($insertAttempt < 2) {
+$maxInsertAttempts = 8;
+while ($insertAttempt < $maxInsertAttempts) {
     $insertAttempt++;
     if (! $master_conn->begin_transaction()) {
         header('Location: messages.php?conv=' . $conv . '&error=sale_feedback_db');
@@ -219,14 +220,12 @@ while ($insertAttempt < 2) {
                 FILE_APPEND
             );
             $stmt->close();
-            if ($errno === 1062 && $insertAttempt === 1) {
+            if ($errno === 1062) {
                 $master_conn->rollback();
-                @$master_conn->query('ALTER TABLE user_reviews DROP INDEX uq_reviewer_reviewee');
                 wvsu_user_reviews_drop_pair_unique_if_present($master_conn);
-                continue;
-            }
-            if ($errno === 1062 && $insertAttempt === 2) {
-                $master_conn->rollback();
+                if ($insertAttempt < $maxInsertAttempts) {
+                    continue;
+                }
                 $race = fetch_master(
                     'SELECT review_id FROM user_reviews WHERE reviewer_id = ? AND reviewee_id = ? AND listing_id = ? LIMIT 1',
                     [(string) $me, (string) $sellerId, (string) $listingId]
@@ -238,7 +237,7 @@ while ($insertAttempt < 2) {
                         exit;
                     }
                     try {
-                        wvsu_finalize_sale_feedback_conversation($conv, $me);
+                        wvsu_finalize_sale_feedback_conversation($conv, $me, $listingId);
                         $master_conn->commit();
                     } catch (Throwable $e2) {
                         $master_conn->rollback();
@@ -263,7 +262,7 @@ while ($insertAttempt < 2) {
         }
         $stmt->close();
 
-        wvsu_finalize_sale_feedback_conversation($conv, $me);
+        wvsu_finalize_sale_feedback_conversation($conv, $me, $listingId);
 
         $master_conn->commit();
         break;
@@ -288,10 +287,21 @@ exit;
 /**
  * Clears pending-sale flags and posts the buyer feedback line (call inside an open transaction).
  */
-function wvsu_finalize_sale_feedback_conversation(int $convId, int $buyerId): void
+function wvsu_finalize_sale_feedback_conversation(int $convId, int $buyerId, int $listingId = 0): void
 {
+    $thanksLine = 'Buyer left feedback and a photo for this sale — thanks for trading on WVSU Connect.';
+    if ($listingId > 0 && function_exists('fetch_master')) {
+        $ltRow = fetch_master(
+            'SELECT LOWER(TRIM(IFNULL(listing_type, \'product\'))) AS lt FROM listings WHERE listing_id = ? LIMIT 1',
+            [(string) $listingId]
+        );
+        if ($ltRow && ($ltRow['lt'] ?? '') === 'service') {
+            $thanksLine = 'Buyer left feedback and a photo for this service — thanks for trading on WVSU Connect.';
+        }
+    }
+
     insert(
-        'UPDATE conversation_meta SET is_closed = 1, pending_sale_buyer_id = NULL, pending_sale_listing_id = NULL WHERE conversation_id = ?',
+        'UPDATE conversation_meta SET is_closed = 1, pending_sale_buyer_id = NULL, pending_sale_listing_id = NULL, pending_sale_qty = 1 WHERE conversation_id = ?',
         [(string) $convId]
     );
 
@@ -300,7 +310,7 @@ function wvsu_finalize_sale_feedback_conversation(int $convId, int $buyerId): vo
         [
             (string) $convId,
             (string) $buyerId,
-            'Buyer left feedback and a photo for this sale — thanks for trading on WVSU Connect.',
+            $thanksLine,
         ]
     );
     insert(

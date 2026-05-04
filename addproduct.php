@@ -44,7 +44,8 @@ $wvsuOtherCategoryIds = wvsu_product_category_other_ids($wvsuProductCategories);
         <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4"><?= htmlspecialchars($wvsuAddErrMsg, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
-    <form action="process-add-product.php" method="POST" enctype="multipart/form-data" id="wvsuAddProductForm">
+    <form action="process-add-product.php" method="POST" enctype="multipart/form-data" id="wvsuAddProductForm"
+          data-wvsu-confirm="Are you sure you want to publish this product listing?">
         <div class="row g-4">
             
             <div class="col-md-6">
@@ -165,6 +166,7 @@ $wvsuOtherCategoryIds = wvsu_product_category_other_ids($wvsuProductCategories);
 
 <?php include __DIR__ . '/footer.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/wvsu-form-confirm.js"></script>
 <script>
 (function () {
     var sel = document.getElementById('wvsuAddProductCategory');
